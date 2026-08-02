@@ -6,4 +6,5 @@ acts as an external database for the dispatcher to consult, replacing the centra
 fast performance and extremely low memory usage. This repo uses only 13.1MB of RAM (on macOS) with a dataset of 16,000 Polymarket Events 
 inside the database. It also features a builtin proxy system that can be given multiple SOCKS5 proxies to use. This is used
 by Argus to passon the `WIREPROXY_BIND_ADDRESS`, and when not in use APDB auto-detects proxies (if a direct path is unavailable) by encoding the default ports
-of Argus managed WireGuard instances. 
+of Argus managed WireGuard instances. The exact mechanism that Argus and APDB use to pass results is not yet decided. The groundwork for the database
+and its memory usage is already completed. 
