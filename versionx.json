@@ -1,0 +1,103 @@
+{
+  "symbols_map": {
+    "proxy_addrs": [
+      "2857c5c9d14051152b58baf1daba32720d0a39d25270f53c2d6ef09241ce1f81",
+      "function"
+    ],
+    "Database::default": [
+      "abe3dcb835769deb94f3335404c926129ab2530175be374b401801b6da784f0a",
+      "method"
+    ],
+    "main_internal": [
+      "871d5e69df0013c32746e7ea8b6d463400afe1504a200052519a2f101e7ea9d4",
+      "function"
+    ],
+    "print_rss": [
+      "c6772e2bcf1c600bab3c31d6bb68ccd21683dd5a2dded7dbd5fbe46615c93a5f",
+      "function"
+    ],
+    "PolyMarketError": [
+      "9b268f1137f73705765446d5a5abd0d2255d4095b370de522d7c60d64def071c",
+      "struct"
+    ],
+    "OpenEventsIter::next": [
+      "c4f82c3d41752af3facf32f8e523c530573eb5f6bdf471f16f0606ee1295e623",
+      "method"
+    ],
+    "Database::add_event": [
+      "3ce0722cf2569cc8ff189556e05566b5667fcc9f811a80ab6c937ea9972f4cca",
+      "method"
+    ],
+    "fetch_events": [
+      "6dcf5242686abb2df99f426c8f5a762158c0fec9c858e1b240e1d6b6f21c1cf8",
+      "function"
+    ],
+    "FetchEventsParams::default": [
+      "9b9695efdf55f017e63dae6d4f0804ce485fdc7912af2324d0f299ee62eab1bc",
+      "method"
+    ],
+    "fetch_all_markets_cached": [
+      "39ab05a3ea39cbd0d5dc61a55c5a59877c679061bcc78dd2943fd4161b2c5840",
+      "function"
+    ],
+    "Database::get_event": [
+      "b0f5d18a86df0abe65ef4abf7a8b63bf1344958bd257e15910f5c1256dd8fcbe",
+      "method"
+    ],
+    "is_null_disabled": [
+      "3727ab41e092a0f91a473604a54270e0f8a4adde99fc688dc501f8b0d0e9d222",
+      "function"
+    ],
+    "Database": [
+      "daeca1ac004da68d17e12592e562a5d0491691c8b1f2f5e609835b772d00b71d",
+      "struct"
+    ],
+    "find_proxy_addr": [
+      "a0fd3f954f0924d7faa6be4c23b0be1d30d49885f2250062398ed3bde161e65a",
+      "function"
+    ],
+    "Database::new": [
+      "0e7d9b38eec2850a56fe240e254b3544e7bae7610e0c0b3841cca63208a8ca6c",
+      "method"
+    ],
+    "file_size": [
+      "aeffc88ccaf0b9564d90b014f446a5727299f72b7a136d42b1e9855662dc6e47",
+      "function"
+    ],
+    "main": [
+      "d6f24313446d1a08e0f4e5566f4ae11ecb4469c5bf22ac3de214879aa21f3a57",
+      "function"
+    ],
+    "PolyMarketError::fmt": [
+      "5b4a5505d23e6d38013762e9edb53b487475f32b6b2f4e500e052ae0dcc71b70",
+      "method"
+    ],
+    "PolymarketEvent": [
+      "841c532d3742ec7df156f4d18c698a20ef8f1270b1ef0268685b4fe7a2e4c79c",
+      "struct"
+    ],
+    "FetchEventsParams": [
+      "55bd190b0e578982c011a24531c44e28f38dad6471bb52123f3d70745d148262",
+      "struct"
+    ],
+    "OpenEventsIter": [
+      "adf647db0014f253cc94af79d0edf597f0620232604d6706bd9f27bbb18637c5",
+      "struct"
+    ],
+    "OpenEventsIter::new": [
+      "1a210869f7a6f97114f64db0ff69eadf7a9fbdfd44a17c061ff088ceed11ffb1",
+      "method"
+    ],
+    "OpenEventsIter::default": [
+      "41406c02468fd751c7c2349fe5358640f95da0713d406b189745c1d2f9439c81",
+      "method"
+    ],
+    "get_proxy_agent": [
+      "5eebfde86f721a2cf0f8670677820c9f1c9a6acac09ff53dcc8d3d49ef6d5c5f",
+      "function"
+    ]
+  },
+  "major_version": 1,
+  "minor_version": 0,
+  "patch_version": 0
+}

@@ -1,0 +1,20 @@
+Version 1.0.0
+Added:
+    + is_null_disabled (function)
+    + proxy_addrs (function)
+    + find_proxy_addr (function)
+    + get_proxy_agent (function)
+    + Database (struct)
+    + Database::default (method)
+    + Database::new (method)
+    + Database::get_event (method)
+    + Database::add_event (method)
+    + main_internal (function)
+    + print_rss (function)
+    + file_size (function)
+Changes:
+    * main (function)
+    * PolymarketEvent (struct)
+    * fetch_events (function)
+
+====================================================================================================

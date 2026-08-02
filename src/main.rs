@@ -1,3 +1,51 @@
+mod proxy;
+mod poly_api;
+mod database;
+use sysinfo::{Pid, System};
+use std::collections::HashMap;
+
+
+fn main_internal() {
+    let mut iterator = poly_api::OpenEventsIter::default();
+    let mut db = database::Database::new(HashMap::new(), std::fs::File::create_new("polymarket_events.db").unwrap());
+    loop{
+        let events_unwrapped = iterator.next();
+        if let Some(events) = events_unwrapped{
+            for event in events.unwrap(){
+                db.add_event(event);
+            }
+        }else{
+            println!("No more events");
+            break;
+        }
+        println!("Events processed: {}", db.lines);
+        let rss = print_rss().unwrap();
+        let file_size = file_size("polymarket_events.db");
+        println!("RSS: {} MB, File size: {} MB. Ratio rss/file_size = {}", rss, file_size, rss / file_size as f64);
+    }
+}
+fn print_rss() -> Option<f64> {
+    let mut sys = System::new() ;
+    let pid = Pid::from_u32(std::process::id());
+    sys.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[pid]), true);
+    if let Some(process) = sys.process(pid) {
+        return Some(process.memory() as f64 / 1024.0 / 1024.0);
+    }
+    None
+}
+
+
+/// return the file size in megabytes
+fn file_size(path: &str) -> u64 {
+    let metadata = std::fs::metadata(path).unwrap();
+    metadata.len() / 1024 / 1024
+}
+
 fn main() {
-    println!("Hello, world!");
+    let iterations = 1;
+    for n in 0..iterations{
+        println!("Iteration: {}", n);
+        main_internal();
+    }
+
 }
