@@ -1,5 +1,6 @@
 use std::fs;
 use std::io::*;
+use std::fs::File;
 use std::collections::HashMap;
 use crate::poly_api::PolymarketEvent;
 
@@ -23,19 +24,33 @@ impl Default for Database {
 }
 
 impl Database{
-    pub(crate) fn new(mapping: HashMap<String, u32>, file_handle: fs::File) -> Self{
+    pub(crate) fn new(mapping: HashMap<String, u32>, file_handle: File) -> Self{
         let lines = mapping.len() as u32;
         Self{mapping, file_handle, lines }
+    }
+
+    pub(crate) fn from_file(file_handle: File) -> Self{
+        let mut mapping = HashMap::new();
+        let mut lines = 0;
+        let read_buff = BufReader::new(file_handle.try_clone().unwrap());
+        for line in read_buff.lines(){
+            if let Ok(line) = line{
+                let event : PolymarketEvent = serde_json::from_str(&line).unwrap();
+                mapping.insert(event.ticker, lines);
+                lines += 1;
+            }
+        }
+
+        Self{mapping, file_handle, lines}
     }
 
     pub(crate) fn get_event(&self, ticker: &str) -> Option<PolymarketEvent> {
         let pos = self.mapping.get(ticker)?;
         let mut file_handle = self.file_handle.try_clone().unwrap();
-        file_handle.seek(SeekFrom::Start(*pos as u64)).unwrap();
+        file_handle.seek(SeekFrom::Start(0)).unwrap();
 
-        let mut reader = BufReader::new(file_handle);
-        let mut line = String::new();
-        reader.read_line(&mut line).unwrap();
+        let reader = BufReader::new(file_handle);
+        let line = reader.lines().nth(*pos as usize)?.unwrap();
 
         let event: PolymarketEvent = serde_json::from_str(&line).unwrap();
         Some(event)

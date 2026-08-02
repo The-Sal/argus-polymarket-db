@@ -18,3 +18,14 @@ Changes:
     * fetch_events (function)
 
 ====================================================================================================
+Version 1.1.0
+Added:
+    + Database::from_file (method)
+Changes:
+    * Database::new (method)
+    * Database::get_event (method)
+    * file_size (function)
+    * main_internal (function)
+    * main (function)
+
+====================================================================================================
