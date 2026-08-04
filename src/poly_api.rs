@@ -104,11 +104,36 @@ pub fn fetch_events(
     for item in items {
         match serde_json::from_value::<PolymarketEvent>(item.clone()) {
             Ok(event) => events.push(event),
-            Err(e) => log::warn!("[poly_api] Error parsing event: {e}"),
+            Err(e) => {
+                // The bare serde error ("missing field `ticker`") doesn't
+                // say what Gamma actually sent, which makes it undiagnosable
+                // on its own — pair it with an identifier (if any field that
+                // looks like one is present) and a truncated raw preview.
+                let id = item
+                    .get("id")
+                    .or_else(|| item.get("slug"))
+                    .map(|v| v.to_string());
+                let preview = truncate_for_log(&item.to_string(), 300);
+                log::warn!(
+                    "[poly_api] Error parsing event{}: {e} — raw: {preview}",
+                    id.map(|i| format!(" (id={i})")).unwrap_or_default()
+                );
+            }
         }
     }
 
     Ok(events)
+}
+
+/// Truncates on a char boundary (never a byte index — the raw JSON may
+/// contain multi-byte UTF-8) so a log preview can't panic mid-string.
+fn truncate_for_log(s: &str, max_chars: usize) -> String {
+    if s.chars().count() > max_chars {
+        let truncated: String = s.chars().take(max_chars).collect();
+        format!("{truncated}...")
+    } else {
+        s.to_string()
+    }
 }
 
 /// Lazily yields successive pages covering ALL open (`closed=false`) events,

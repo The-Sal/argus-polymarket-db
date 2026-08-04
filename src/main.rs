@@ -1,73 +1,132 @@
+mod api;
 mod proxy;
-mod poly_api;
+mod server;
+mod refresh;
+mod version;
 mod database;
-use sysinfo::{Pid, System};
-use std::collections::HashMap;
-use crate::database::Database;
+mod poly_api;
+use std::fs::File;
+use std::sync::Arc;
+use std::path::PathBuf;
+use database::{Database, Snapshot};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-fn print_rss() -> Option<f64> {
-    let mut sys = System::new() ;
-    let pid = Pid::from_u32(std::process::id());
+
+const DEFAULT_DB_PATH: &str = "polymarket_events.db";
+const DEFAULT_BIND_ADDRESS: &str = "/tmp/argus_polymarket_db.sock";
+const DEFAULT_REFRESH_INTERVAL_SECS: u64 = 300;
+
+struct StderrLogger;
+
+/// Time-of-day only (no date/timezone math needed) — enough to correlate
+/// "when did the refresh start" against a clock without pulling in a date
+/// dependency for a stderr backend this minimal.
+fn now_hms_utc() -> String {
+    let secs = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+    let rem = secs % 86400;
+    format!("{:02}:{:02}:{:02}", rem / 3600, (rem % 3600) / 60, rem % 60)
+}
+
+impl log::Log for StderrLogger {
+    fn enabled(&self, metadata: &log::Metadata) -> bool {
+        metadata.level() <= log::Level::Info
+    }
+    fn log(&self, record: &log::Record) {
+        if self.enabled(record.metadata()) {
+            eprintln!("{} [{}] {}", now_hms_utc(), record.level(), record.args());
+        }
+    }
+    fn flush(&self) {}
+}
+
+static LOGGER: StderrLogger = StderrLogger;
+
+fn init_logging() {
+    // Every background component (server.rs, refresh.rs) logs via the `log`
+    // facade; without a backend registered here, none of it would ever be
+    // seen, which matters a lot more for a long-running service than it did
+    // for the old interactive prototype. `log` is already a dependency —
+    // this is a minimal stderr backend, not a new one.
+    let _ = log::set_logger(&LOGGER).map(|()| log::set_max_level(log::LevelFilter::Info));
+}
+
+fn rss_mb() -> Option<f64> {
+    let mut sys = sysinfo::System::new();
+    let pid = sysinfo::Pid::from_u32(std::process::id());
     sys.refresh_processes(sysinfo::ProcessesToUpdate::Some(&[pid]), true);
-    if let Some(process) = sys.process(pid) {
-        return Some(process.memory() as f64 / 1024.0 / 1024.0);
-    }
-    None
+    sys.process(pid).map(|p| p.memory() as f64 / 1024.0 / 1024.0)
 }
 
-
-fn file_size(path: &str) -> u64 {
-    let metadata = std::fs::metadata(path).unwrap();
-    metadata.len() / 1024 / 1024
+fn env_or(key: &str, default: &str) -> String {
+    std::env::var(key).unwrap_or_else(|_| default.to_string())
 }
 
-fn main_internal() {
-    let mut iterator = poly_api::OpenEventsIter::default();
-    let mut db: Database;
-    if std::fs::metadata("polymarket_events.db").is_ok() {
-        // File exists, proceed with existing database
-        db = database::Database::from_file(std::fs::File::open("polymarket_events.db").unwrap());
+fn format_duration(secs: u64) -> String {
+    if secs < 60 {
+        format!("{secs}s")
+    } else if secs < 3600 {
+        format!("{}m{}s", secs / 60, secs % 60)
+    } else if secs < 86400 {
+        format!("{}h{}m", secs / 3600, (secs % 3600) / 60)
     } else {
-        db = database::Database::new(HashMap::new(), std::fs::File::create_new("polymarket_events.db").unwrap());
-        loop{
-            let events_unwrapped = iterator.next();
-            if let Some(events) = events_unwrapped{
-                for event in events.unwrap(){
-                    db.add_event(event);
-                }
-            }else{
-                println!("No more events");
-                break;
-            }
-            println!("Events processed: {}", db.lines);
-            let rss = print_rss().unwrap();
-            let file_size = file_size("polymarket_events.db");
-            println!("RSS: {} MB, File size: {} MB. Ratio rss/file_size = {}", rss, file_size, rss / file_size as f64);
-        }
-    }
-
-    println!("Database size: {}", db.lines);
-    loop {
-        println!("Enter event ticker:");
-        let mut ticker = String::new();
-        std::io::stdin().read_line(&mut ticker).unwrap();
-        let ticker = ticker.trim();
-        if let Some(event) = db.get_event(ticker){
-            println!("Event found with ticker: {}, end_date: {}", event.ticker, event.end_date.unwrap());
-        }else{
-            println!("Event not found");
-        }
+        format!("{}d{}h", secs / 86400, (secs % 86400) / 3600)
     }
 }
-
 
 fn main() {
-    let iterations = 1; // testing knob
-    for n in 0..iterations{
-        if iterations > 1{
-            println!("Iteration: {}", n);
-        }
-        main_internal();
-    }
+    init_logging();
+    _ = dotenvy::from_filename(".env");
 
+    let db_path = PathBuf::from(env_or("APDB_DB_PATH", DEFAULT_DB_PATH));
+    let bind_address = PathBuf::from(env_or("APDB_BIND_ADDRESS", DEFAULT_BIND_ADDRESS));
+    let refresh_interval_secs: u64 = env_or("APDB_REFRESH_INTERVAL_SECS", &DEFAULT_REFRESH_INTERVAL_SECS.to_string())
+        .parse()
+        .unwrap_or(DEFAULT_REFRESH_INTERVAL_SECS);
+
+    let snapshot: Arc<Snapshot> = if db_path.exists() {
+        let file = File::open(&db_path).expect("failed to open existing database file");
+        if let Ok(meta) = file.metadata() {
+            let age_secs = meta
+                .modified()
+                .ok()
+                .and_then(|m| SystemTime::now().duration_since(m).ok())
+                .map(|d| d.as_secs());
+            let age_str = age_secs.map(format_duration).unwrap_or_else(|| "unknown".to_string());
+            log::info!(
+                "Loading existing database from {} ({:.1}MB, last written {age_str} ago)...",
+                db_path.display(),
+                meta.len() as f64 / 1024.0 / 1024.0
+            );
+        } else {
+            log::info!("Loading existing database from {}...", db_path.display());
+        }
+        Arc::new(Snapshot::from_file(file).expect("failed to load existing database file"))
+    } else {
+        log::info!(
+            "No existing database found at {}; running initial crawl (this can take a while)...",
+            db_path.display()
+        );
+        refresh::full_crawl_and_compact(&db_path, None).expect("initial crawl failed")
+    };
+
+    log::info!(
+        "Database ready: {} events, db_version={}, RSS={:.1}MB",
+        snapshot.lines,
+        version::version_string(),
+        rss_mb().unwrap_or(-1.0)
+    );
+
+    let db = Arc::new(Database::new(snapshot));
+
+    log::info!("Background refresh will run every {refresh_interval_secs}s");
+    refresh::spawn_refresh_loop(
+        Arc::clone(&db),
+        db_path.clone(),
+        Duration::from_secs(refresh_interval_secs),
+    );
+
+    let listener = server::bind(&bind_address).expect("failed to bind Unix domain socket listener");
+    log::info!("Listening on {}", bind_address.display());
+
+    server::run(listener, db);
 }

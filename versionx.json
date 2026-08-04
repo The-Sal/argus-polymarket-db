@@ -1,107 +1,283 @@
 {
   "symbols_map": {
-    "FetchEventsParams::default": [
-      "9b9695efdf55f017e63dae6d4f0804ce485fdc7912af2324d0f299ee62eab1bc",
-      "method"
-    ],
-    "find_proxy_addr": [
-      "a0fd3f954f0924d7faa6be4c23b0be1d30d49885f2250062398ed3bde161e65a",
+    "handle_list_asset_ids": [
+      "9cb5446cdd197d46c326531882942f2583ecc6b01876016f2ea40d9dc1fa5b35",
       "function"
-    ],
-    "proxy_addrs": [
-      "2857c5c9d14051152b58baf1daba32720d0a39d25270f53c2d6ef09241ce1f81",
-      "function"
-    ],
-    "Database::new": [
-      "e7065de72c62817f6bc571e0467ccde178c6b76e0efd807867b1c9290a49216f",
-      "method"
-    ],
-    "main": [
-      "f38c7ae0591109a4c73cc46698e4d83ccdf4be5e613b29a9d8c6bd2aca037c87",
-      "function"
-    ],
-    "Database::from_file": [
-      "5c879e723c1a06ff9b875ca815e8e409fb1e260663457b19dcaf141018441f6e",
-      "method"
-    ],
-    "Database::add_event": [
-      "3ce0722cf2569cc8ff189556e05566b5667fcc9f811a80ab6c937ea9972f4cca",
-      "method"
-    ],
-    "PolymarketEvent": [
-      "841c532d3742ec7df156f4d18c698a20ef8f1270b1ef0268685b4fe7a2e4c79c",
-      "struct"
-    ],
-    "OpenEventsIter::new": [
-      "1a210869f7a6f97114f64db0ff69eadf7a9fbdfd44a17c061ff088ceed11ffb1",
-      "method"
-    ],
-    "OpenEventsIter::default": [
-      "41406c02468fd751c7c2349fe5358640f95da0713d406b189745c1d2f9439c81",
-      "method"
     ],
     "OpenEventsIter::next": [
       "c4f82c3d41752af3facf32f8e523c530573eb5f6bdf471f16f0606ee1295e623",
       "method"
     ],
-    "OpenEventsIter": [
-      "adf647db0014f253cc94af79d0edf597f0620232604d6706bd9f27bbb18637c5",
-      "struct"
-    ],
-    "FetchEventsParams": [
-      "55bd190b0e578982c011a24531c44e28f38dad6471bb52123f3d70745d148262",
-      "struct"
-    ],
-    "file_size": [
-      "453cdd661bef6008456bafed95541a94736a17e606c9a45d432627672d9813a9",
+    "proxy_addrs": [
+      "2857c5c9d14051152b58baf1daba32720d0a39d25270f53c2d6ef09241ce1f81",
       "function"
     ],
-    "get_proxy_agent": [
-      "5eebfde86f721a2cf0f8670677820c9f1c9a6acac09ff53dcc8d3d49ef6d5c5f",
+    "PolyMarketError::fmt": [
+      "5b4a5505d23e6d38013762e9edb53b487475f32b6b2f4e500e052ae0dcc71b70",
+      "method"
+    ],
+    "handle_line": [
+      "3c8ca9b548dab45a9081c8d58c31c4579083d4c8cc1baec7ad0ef30313eafe5c",
+      "function"
+    ],
+    "err_response": [
+      "17157dfa84756f2850bd613d732ace09df8d45cfc5a85ae47b929299714bcccd",
+      "function"
+    ],
+    "handle_get_event": [
+      "c09777c648fa42ac06ba12b477f17ab8b3e293c34870a1b12e40160fb97fc090",
+      "function"
+    ],
+    "Snapshot::read_value": [
+      "d284c26f8fd15e864f4db0a74dd96d315f4a7859c20be5403941bed16b9c9cc7",
+      "method"
+    ],
+    "GetEventParams": [
+      "94855f9846f01d46951141694a221901d10bdcdf415966b94fbe336133263ea6",
+      "struct"
+    ],
+    "PolymarketEvent": [
+      "841c532d3742ec7df156f4d18c698a20ef8f1270b1ef0268685b4fe7a2e4c79c",
+      "struct"
+    ],
+    "ok_response": [
+      "a1719709b3ca4452a07d8d29fc96d272fec5c0094862fdbc4f476582a4e941f0",
       "function"
     ],
     "PolyMarketError": [
       "9b268f1137f73705765446d5a5abd0d2255d4095b370de522d7c60d64def071c",
       "struct"
     ],
+    "now_unix": [
+      "d7794684224530a6da086ac621b27471ebe4ca58abc54c5e760092492e0d67da",
+      "function"
+    ],
+    "FetchEventsParams::default": [
+      "9b9695efdf55f017e63dae6d4f0804ce485fdc7912af2324d0f299ee62eab1bc",
+      "method"
+    ],
+    "OpenEventsIter::default": [
+      "41406c02468fd751c7c2349fe5358640f95da0713d406b189745c1d2f9439c81",
+      "method"
+    ],
     "fetch_all_markets_cached": [
       "39ab05a3ea39cbd0d5dc61a55c5a59877c679061bcc78dd2943fd4161b2c5840",
       "function"
     ],
-    "Database::default": [
-      "abe3dcb835769deb94f3335404c926129ab2530175be374b401801b6da784f0a",
+    "Database::swap": [
+      "97b6d4683c53ab91b176f90529b8feb71582d1e10e5a597572ce44af6f6401d9",
       "method"
     ],
-    "PolyMarketError::fmt": [
-      "5b4a5505d23e6d38013762e9edb53b487475f32b6b2f4e500e052ae0dcc71b70",
+    "main": [
+      "bc36283bf37b48741a5ca52298c21442d99c1b7800a510563cae763298465d03",
+      "function"
+    ],
+    "version_string": [
+      "ac91c7bb3e2c22380b811619d58a074c2cc6cbeee2cfb9c3c56fbf58f724792f",
+      "function"
+    ],
+    "StderrLogger::log": [
+      "7d4f3cf8ba273f1f25e0e5d6e7c490e1cb0cbdd74389130765476aefb00d6c8f",
       "method"
     ],
-    "Database": [
-      "daeca1ac004da68d17e12592e562a5d0491691c8b1f2f5e609835b772d00b71d",
+    "run": [
+      "17899e5ab2cbcebfe75cd4bcacaa364611f811bb4dfc24af4953afabe44786a0",
+      "function"
+    ],
+    "format_duration": [
+      "ddf917e16aa6b1013d298ddd7dd450299cf0264ee21ed65615bd0c56762be828",
+      "function"
+    ],
+    "spawn_refresh_loop": [
+      "51de68187ad0a9daeabe95ed2c0861635275ef9f3c3076a88675a4b306927deb",
+      "function"
+    ],
+    "AssetIdCursorParams": [
+      "ddd96a8835f7875ae64147aea5a99668e6e44264f291a525bc5b40f31a29f37f",
       "struct"
     ],
-    "Database::get_event": [
-      "c8a213e6e95e341c389a773c27a1d75b46aa9504a641c7a6a8a61fca63bbb36c",
+    "OpenEventsIter": [
+      "adf647db0014f253cc94af79d0edf597f0620232604d6706bd9f27bbb18637c5",
+      "struct"
+    ],
+    "handle_list_events": [
+      "43449b940bc14fd458f5d52d1fc2b5408229de52ec30d0a2c22cdf8ed912a55f",
+      "function"
+    ],
+    "handle_list_tickers": [
+      "ca53e330e9a4db0269317941b47903f35539a76fde28c6e6e4535dd988942823",
+      "function"
+    ],
+    "Database::snapshot": [
+      "1faf1ff8e7e0b5cc0cde54ff05b9ed7ee4758b738f0f630307fde33ea4fe8ebe",
       "method"
     ],
-    "print_rss": [
-      "c6772e2bcf1c600bab3c31d6bb68ccd21683dd5a2dded7dbd5fbe46615c93a5f",
+    "dedupe_keep_last": [
+      "ffd4107c195830368ede45bff148bda3003b4e7cdf98e356e0fde7a4afdd9ddb",
       "function"
     ],
-    "fetch_events": [
-      "6dcf5242686abb2df99f426c8f5a762158c0fec9c858e1b240e1d6b6f21c1cf8",
+    "version": [
+      "9c9d91fd93efdaa81b2e5b592a1562e308fdbe172c69af0b1fbce5d19c7c007d",
       "function"
     ],
-    "main_internal": [
-      "f6e6c2810925696712b95cfb031288fe486d6194edd7d2d33273c250eb5277a7",
+    "env_or": [
+      "cc8db4346e1e64de7d2017a283571620e0439c914a37f9f845e2ba934bf2fa6d",
+      "function"
+    ],
+    "Database": [
+      "22acaf8a9e823c158150f6b58f19f488b5147929a162c198fa63dfc7a7d2b7fd",
+      "struct"
+    ],
+    "now_hms_utc": [
+      "93ca74ec06121b64c8bf85e0f039cc0ca5bc390134d6297f11a5d85752f80467",
+      "function"
+    ],
+    "merge_carry_forward": [
+      "53eaf8169502a150ad2fe4c03f8a31244a2722244210ee8c6fde6a867fa362df",
+      "function"
+    ],
+    "CursorParams": [
+      "19c5552eeb21d752a68cf07099ab32167a57a66b7cf76e47ac506c515bf65667",
+      "struct"
+    ],
+    "dispatch": [
+      "33447cc4509517a0fe4cee3ddd02fabee326708691e0ae5781d04374921a05cc",
+      "function"
+    ],
+    "Snapshot::prefix_range": [
+      "19dd0f719469f5c805b5895e0a77e02f31eebceca214ec845ebf8f2c2a0a810e",
+      "method"
+    ],
+    "version_tuple": [
+      "3b3fd8c114722161ed107db7a81d1d2587743e79de51d35a4c38a7c5034f1073",
+      "function"
+    ],
+    "init_logging": [
+      "7d574b54b7ec0d94e142315dd39ffe654f5d0a5c980ca186a02df6798a745a41",
+      "function"
+    ],
+    "FetchEventsParams": [
+      "55bd190b0e578982c011a24531c44e28f38dad6471bb52123f3d70745d148262",
+      "struct"
+    ],
+    "StderrLogger": [
+      "bef80b02d301c30faf2a11b64107d6ae913b3a51f2df11efb9cb5c4f66fd5296",
+      "struct"
+    ],
+    "truncate_for_log": [
+      "37ba263266ad480d08d4dffabb1f02efe5df61fc988387f77a0705a65c631567",
+      "function"
+    ],
+    "IndexEntry": [
+      "b1e6df52143ed0461575431bafa26bcd1c202771eab55ac763a146b66edd88b5",
+      "struct"
+    ],
+    "StderrLogger::flush": [
+      "b2d94cf51bf7818a03047a3f6103701b6861ee829ce16132bb05cba9fb227841",
+      "method"
+    ],
+    "extract_asset_ids": [
+      "f69bce81df55bc88b98fde7c61c84fb859a79fabbf62fe9589532879c0c2cba1",
+      "function"
+    ],
+    "parse_params": [
+      "8077b03d3d059e42467fdc5da09a5cab2c424204737e55f5300714d0fd7f3011",
       "function"
     ],
     "is_null_disabled": [
       "3727ab41e092a0f91a473604a54270e0f8a4adde99fc688dc501f8b0d0e9d222",
       "function"
+    ],
+    "PrefixSearchParams": [
+      "1170a0379dce5feac2607e46f8bfe2948bae6795e620ff7219a9883d1133f5ea",
+      "struct"
+    ],
+    "fetch_events": [
+      "cce99c6a91383f807a45a1c2274e85b2574f4495d55caff0f7091365d182af91",
+      "function"
+    ],
+    "OpenEventsIter::new": [
+      "1a210869f7a6f97114f64db0ff69eadf7a9fbdfd44a17c061ff088ceed11ffb1",
+      "method"
+    ],
+    "handle_db_info": [
+      "faaee4bc8dbce6565c2266519f054812434a519d0389dec3e6c9d80048b2f5b1",
+      "function"
+    ],
+    "tmp_path_for": [
+      "a5c0bcb5de6ece19a3be52996ce65edc4e531ec2d46b8280f7b12461f4c711fa",
+      "function"
+    ],
+    "rss_mb": [
+      "fcf2763e78b98d7eb43bb23b7a336dc7e134422280367520d3530a332c523b79",
+      "function"
+    ],
+    "resolve_limit": [
+      "a1702a5b4d745c9fb5a7a076159ab284d37dc93e07f1f2a2e9c16f821e330685",
+      "function"
+    ],
+    "Snapshot::read_raw": [
+      "1c9d78f1fa8f56f1ce45413ee3f23b92c410d470a9f99b0871854155949472e0",
+      "method"
+    ],
+    "Database::new": [
+      "d23b9e57b50a0a14e2e3facc95175f57ca8ac102c4c1688beac493d8e77f97ff",
+      "method"
+    ],
+    "full_crawl_and_compact": [
+      "ae69e672638a5cc5a7304a36c348b7b633d3e4fa6994af03a6f56a59acaf385c",
+      "function"
+    ],
+    "Snapshot::from_file": [
+      "88ccb8ddacb08b118d675d72eadbec59e6faa7ff7a503783ff73cf0a91228ac2",
+      "method"
+    ],
+    "Snapshot": [
+      "46e600627bddac3cd837b5aa095c98fe05f7d9d928b8fb0f7b0acdf299efe7a4",
+      "struct"
+    ],
+    "StderrLogger::enabled": [
+      "251489e9fac284c3659c4bb8c50e4a6c366665394b6a4313765a4dd34f901eb8",
+      "method"
+    ],
+    "handle_connection": [
+      "070a53f52e656d06adff2fd970a5768505078167c3d4e9a926b8d02fe02643d6",
+      "function"
+    ],
+    "get_proxy_agent": [
+      "5eebfde86f721a2cf0f8670677820c9f1c9a6acac09ff53dcc8d3d49ef6d5c5f",
+      "function"
+    ],
+    "VersionFile": [
+      "ea62691c7d033f32a99d116a6bca6d75fda7e2b13e85dbfc9ddb59a11d13de57",
+      "struct"
+    ],
+    "handle_prefix_search": [
+      "31b03295c1bc8322a2701f36223df7c210e110f0f68d2c7d83a307d32b7aa3fd",
+      "function"
+    ],
+    "Snapshot::find": [
+      "938d4767a8d69af5943d984eb7218314b306f2fad0148ecea71b6f30a7e1621a",
+      "method"
+    ],
+    "bind": [
+      "96c679a56244450a07c58481f0b2020f4d570a492045c737d414f617fcc8608a",
+      "function"
+    ],
+    "Envelope": [
+      "c179250f8b5d0706f5a4d56dfec5d874eefb90a809e17342210d2c76135bac50",
+      "struct"
+    ],
+    "Snapshot::cursor_range": [
+      "1651df5fbd12f9784f09c419b6522daabc75825c5c60aab09f20c4e9666a96d3",
+      "method"
+    ],
+    "find_proxy_addr": [
+      "a0fd3f954f0924d7faa6be4c23b0be1d30d49885f2250062398ed3bde161e65a",
+      "function"
     ]
   },
   "major_version": 1,
-  "minor_version": 1,
+  "minor_version": 2,
   "patch_version": 0
 }
