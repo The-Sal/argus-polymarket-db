@@ -73,7 +73,17 @@ fn format_duration(secs: u64) -> String {
     }
 }
 
+
+fn check_and_print_version() {
+    let args = std::env::args().collect::<Vec<_>>();
+    if args.contains(&"--version".to_string()) {
+        println!("Argus Polymarket Database v{}", version::version_string());
+        std::process::exit(0);
+    }
+}
+
 fn main() {
+    check_and_print_version();
     init_logging();
     _ = dotenvy::from_filename(".env");
 
