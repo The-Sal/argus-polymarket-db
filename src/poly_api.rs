@@ -257,6 +257,7 @@ impl Iterator for OpenEventsIter {
 /// memory pruning, and the `_max_seen_markets` progress bound all live in
 /// the caller, same as they did in the Python method this closure was
 /// nested inside.
+#[allow(dead_code)]
 pub fn fetch_all_markets_cached() -> HashMap<String, PolymarketEvent> {
     let mut cache: HashMap<String, PolymarketEvent> = HashMap::new();
     let mut fetched = 0usize;
