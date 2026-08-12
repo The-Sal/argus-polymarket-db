@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::sync::Arc;
+use crate::poly_api;
 use std::path::{Path, PathBuf};
 use crate::poly_api::OpenEventsIter;
 use std::io::{self, BufWriter, Write};
@@ -10,6 +11,26 @@ use crate::database::{dedupe_keep_last, Database, IndexEntry, Snapshot};
 /// A full crawl is ~170 requests to Gamma; logging every page would flood
 /// stderr, so progress is throttled to wall-clock time instead of page count.
 const CRAWL_PROGRESS_INTERVAL: Duration = Duration::from_secs(5);
+
+/// A ticker Gamma's `closed=false` crawl stops returning is presumed
+/// closed, but its `endDate` is what's trusted to say *when* — the API's
+/// own `closed` field only reflects state as of that ticker's last crawl
+/// and goes stale the moment it falls out of the open-events crawl (an
+/// event can sit with `closed: false` in our store for months after its
+/// endDate passed). The grace period absorbs crawl-timing noise right
+/// around the boundary rather than evicting the instant a ticker drops out.
+const PRUNE_GRACE_SECS: i64 = 4 * 3600;
+
+/// Parses an `endDate` string (RFC3339, e.g. `2025-11-23T00:00:00Z`) into a
+/// Unix timestamp. Returns `None` on anything unparseable rather than
+/// erroring — an unparseable or absent `endDate` means "can't tell if this
+/// is closed," which must fall back to the existing never-evict behavior,
+/// not be treated as eligible for pruning.
+fn parse_rfc3339_unix(date_str: &str) -> Option<i64> {
+    time::OffsetDateTime::parse(date_str, &time::format_description::well_known::Rfc3339)
+        .ok()
+        .map(|dt| dt.unix_timestamp())
+}
 
 fn now_unix() -> u64 {
     SystemTime::now()
@@ -105,9 +126,12 @@ pub(crate) fn full_crawl_and_compact(path: &Path, old: Option<Arc<Snapshot>>) ->
     // a market Gamma stopped listing), copying its bytes into the same temp
     // file, so nothing already known is ever evicted by a refresh.
     if let Some(old_snapshot) = &old {
-        let carried = merge_carry_forward(&mut writer, &mut entries, old_snapshot, &mut offset)?;
+        let (carried, pruned) = merge_carry_forward(&mut writer, &mut entries, old_snapshot, &mut offset)?;
         if carried > 0 {
             log::info!("[refresh] {mode}: carried forward {carried} ticker(s) not seen in this crawl");
+        }
+        if pruned > 0 {
+            log::info!("[refresh] {mode}: pruned {pruned} ticker(s) closed more than {}h ago", PRUNE_GRACE_SECS / 3600);
         }
     }
 
@@ -150,9 +174,11 @@ fn merge_carry_forward<W: Write>(
     entries: &mut Vec<IndexEntry>,
     old: &Snapshot,
     offset: &mut u64,
-) -> io::Result<usize> {
+) -> io::Result<(usize, usize)> {
     let mut new_iter = entries.iter().peekable();
     let mut carried_forward = Vec::new();
+    let mut pruned = 0usize;
+    let now = now_unix() as i64;
 
     for old_entry in &old.index {
         while matches!(new_iter.peek(), Some(n) if n.ticker.as_str() < old_entry.ticker.as_str()) {
@@ -160,6 +186,35 @@ fn merge_carry_forward<W: Write>(
         }
         let already_present = matches!(new_iter.peek(), Some(n) if n.ticker == old_entry.ticker);
         if !already_present {
+            match old.read_value(old_entry) {
+                Ok(old_value) => {
+                    let as_event: poly_api::PolymarketEvent = serde_json::from_value(old_value).unwrap_or_else(|_| {
+                        poly_api::PolymarketEvent{
+                            ticker: "null".to_string(),
+                            end_date: None,
+                            extra: Default::default(),
+                        }
+                    });
+                    if as_event.ticker == "null".to_string() {
+                        log::warn!("[refresh] Skipping crawled record with empty ticker");
+                        continue;
+                    }
+
+                    if let Some(end_unix) = as_event.end_date.as_deref().and_then(parse_rfc3339_unix) {
+                        if now - end_unix > PRUNE_GRACE_SECS {
+                            log::debug!(
+                                "[refresh] Pruning {}: endDate {} was more than {}h ago",
+                                old_entry.ticker,
+                                as_event.end_date.as_deref().unwrap_or(""),
+                                PRUNE_GRACE_SECS / 3600
+                            );
+                            pruned += 1;
+                            continue;
+                        }
+                    }
+                }
+                _ => {}
+            }
             let raw = old.read_raw(old_entry)?;
             writer.write_all(&raw)?;
             writer.write_all(b"\n")?;
@@ -175,7 +230,7 @@ fn merge_carry_forward<W: Write>(
     let carried_count = carried_forward.len();
     entries.extend(carried_forward);
     entries.sort_by(|a, b| a.ticker.cmp(&b.ticker));
-    Ok(carried_count)
+    Ok((carried_count, pruned))
 }
 
 /// Runs `full_crawl_and_compact` forever on `interval`, swapping the result
@@ -308,5 +363,50 @@ mod tests {
         let reloaded = Snapshot::from_file(File::open(&tmp_path).unwrap()).unwrap();
         assert_eq!(reloaded.lines, 1);
         assert_eq!(reloaded.read_value(reloaded.find("a").unwrap()).unwrap()["v"], 2);
+    }
+
+    fn rfc3339_secs_ago(secs: i64) -> String {
+        let then = time::OffsetDateTime::now_utc() - time::Duration::seconds(secs);
+        then.format(&time::format_description::well_known::Rfc3339).unwrap()
+    }
+
+    /// Carry-forward candidates (tickers the fresh crawl didn't return) are
+    /// only ever pruned, never anything the crawl just re-fetched — pruning
+    /// only makes sense for "Gamma stopped returning this," not "still
+    /// open." Three old tickers not seen in this crawl: one closed 5 hours
+    /// ago (past the 4h grace period, must be dropped), one closed 1 hour
+    /// ago (inside the grace period, must survive), and one with no
+    /// `endDate` at all (can't tell if it's closed, so the never-evict
+    /// default must win and it must survive too).
+    #[test]
+    fn merge_carry_forward_prunes_only_tickers_closed_past_the_grace_period() {
+        let old_path = scratch_path("old_db3");
+        let _old_guard = ScratchFile(old_path.clone());
+        write_db(
+            &old_path,
+            &[
+                ("stale", serde_json::json!({"ticker": "stale", "endDate": rfc3339_secs_ago(5 * 3600)})),
+                ("recent", serde_json::json!({"ticker": "recent", "endDate": rfc3339_secs_ago(3600)})),
+                ("undated", serde_json::json!({"ticker": "undated"})),
+            ],
+        );
+        let old_snapshot = Snapshot::from_file(File::open(&old_path).unwrap()).unwrap();
+
+        let tmp_path = scratch_path("tmp_db3");
+        let _tmp_guard = ScratchFile(tmp_path.clone());
+        let mut writer = File::create(&tmp_path).unwrap();
+        let mut entries: Vec<IndexEntry> = Vec::new();
+        let mut offset: u64 = 0;
+
+        let (carried, pruned) = merge_carry_forward(&mut writer, &mut entries, &old_snapshot, &mut offset).unwrap();
+        assert_eq!(carried, 2, "recent and undated tickers must be carried forward");
+        assert_eq!(pruned, 1, "only the ticker closed past the grace period must be pruned");
+        writer.flush().unwrap();
+        drop(writer);
+
+        let reloaded = Snapshot::from_file(File::open(&tmp_path).unwrap()).unwrap();
+        let tickers: Vec<&str> = reloaded.index.iter().map(|e| e.ticker.as_str()).collect();
+        assert_eq!(tickers, vec!["recent", "undated"]);
+        assert!(reloaded.find("stale").is_none(), "stale ticker closed 5h ago must be pruned");
     }
 }
