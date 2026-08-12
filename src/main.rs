@@ -89,7 +89,7 @@ fn main() {
 
     let db_path = PathBuf::from(env_or("APDB_DB_PATH", DEFAULT_DB_PATH));
     let bind_address = PathBuf::from(env_or("APDB_BIND_ADDRESS", DEFAULT_BIND_ADDRESS));
-    let refresh_interval_secs: u64 = env_or("APDB_REFRESH_INTERVAL_SECS", &DEFAULT_REFRESH_INTERVAL_SECS.to_string())
+    let refresh_interval_secs: u64 = env_or("POLYMARKET_FULL_MARKET_CACHE_REFRESH_INTERVAL", &DEFAULT_REFRESH_INTERVAL_SECS.to_string())
         .parse()
         .unwrap_or(DEFAULT_REFRESH_INTERVAL_SECS);
 

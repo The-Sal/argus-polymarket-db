@@ -40,7 +40,7 @@ real environment):
 | ----------------------------- | --------------------------------- | ---------------------------------------------------------- |
 | `APDB_DB_PATH`                | `polymarket_events.db`            | Path to the on-disk NDJSON event log backing the database. |
 | `APDB_BIND_ADDRESS`           | `/tmp/argus_polymarket_db.sock`   | Unix domain socket path the server listens on.             |
-| `APDB_REFRESH_INTERVAL_SECS`  | `300`                             | How often the background refresh loop re-crawls Polymarket. |
+| `POLYMARKET_FULL_MARKET_CACHE_REFRESH_INTERVAL` | `300`             | How often the background refresh loop re-crawls Polymarket. Named to stay in sync with the core [Argus](https://github.com/the-sal/argus) project. |
 | `SOCKS5_ADDRS`                | *(empty)*                         | Comma-separated `socks5://host:port` proxy pool used for outbound Polymarket requests. |
 | `NULL_DISABLED`               | `false`                           | When truthy, disables routing through the null/no-op proxy path. |
 
