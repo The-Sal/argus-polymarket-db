@@ -5,14 +5,16 @@ mod refresh;
 mod version;
 mod database;
 mod poly_api;
+mod tailnet_sync;
+
 use std::fs::File;
 use std::sync::Arc;
 use std::path::PathBuf;
+use shellexpand::tilde;
 use database::{Database, Snapshot};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-
-const DEFAULT_DB_PATH: &str = "polymarket_events.db";
+const DEFAULT_DB_PATH: &str = "~/.argus/polymarket_events.db";
 const DEFAULT_BIND_ADDRESS: &str = "/tmp/argus_polymarket_db.sock";
 const DEFAULT_REFRESH_INTERVAL_SECS: u64 = 300;
 
@@ -87,7 +89,8 @@ fn main() {
     init_logging();
     _ = dotenvy::from_filename(".env");
 
-    let db_path = PathBuf::from(env_or("APDB_DB_PATH", DEFAULT_DB_PATH));
+    let default_db_path = format!("{}", tilde(DEFAULT_DB_PATH));
+    let db_path = PathBuf::from(env_or("APDB_DB_PATH", &default_db_path));
     let bind_address = PathBuf::from(env_or("APDB_BIND_ADDRESS", DEFAULT_BIND_ADDRESS));
     let refresh_interval_secs: u64 = env_or("POLYMARKET_FULL_MARKET_CACHE_REFRESH_INTERVAL", &DEFAULT_REFRESH_INTERVAL_SECS.to_string())
         .parse()

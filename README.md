@@ -2,40 +2,72 @@
 
 An external database backing the Argus Polymarket Dispatcher, replacing the large in-memory dictionary the dispatcher previously kept for every tracked market.
 
-> **Status: early prototype.** This is a proof of concept, not a released component. It has only ever been run on macOS (Apple Silicon) — it has not been built, run, or tested on Linux, and near-certainly needs portability work before it will. Expect rough edges: liberal `unwrap()`s, no crash recovery, no service/API surface (currently just a `main()` you run and talk to over stdin), and a storage format that will change. Treat everything below the fold as direction of travel, not a shipped feature list.
+> **Status: working service, running in production.** APDB runs as a long-lived background service — a Unix domain socket accepting NDJSON requests, with a periodic crawl-and-refresh loop and a real on-disk index — rather than the stdin prototype it started as. It's been running on Linux for 7+ straight days under a dispatcher churning 8,000+ clients, in addition to macOS (Apple Silicon) development use. Releases ship prebuilt binaries for four targets (see [Platform parity](#platform-parity-with-argus)).
 
 ## Why
 
-The Polymarket dispatcher used to be Argus's largest component by memory footprint — 4.5GB+ under load, driven mostly by the sheer number of markets it tracked in-process, compounded by Python's allocation behavior elsewhere in Argus. APDB moves that state out of the dispatcher and into an external store the dispatcher queries instead of holding in memory. In local testing on an Apple Silicon Mac, an APDB instance holding ~16,000 Polymarket events measured at 13.1MB RSS — that number is from a single machine and hasn't been reproduced elsewhere yet, but it's the kind of reduction the rewrite is chasing.
+The Polymarket dispatcher used to be Argus's largest component by memory footprint — 4.5GB+ under load, driven mostly by the sheer number of markets it tracked in-process, compounded by Python's allocation behavior elsewhere in Argus. APDB moves that state out of the dispatcher and into an external store the dispatcher queries instead of holding in memory. In local testing on an Apple Silicon Mac, an APDB instance holding ~16,000 Polymarket events measured at 13.1MB RSS (sleeping, not running) – peak 500MB RSS (active) most importantly, it returns to the original memory footprint when the load is over. On production testing with continious load it averages 100-200MB on prod.
+
+## What it does today
+
+- **Crawls Polymarket's Gamma API** for all open events and writes them to an append-only NDJSON log on disk (`APDB_DB_PATH`).
+- **Indexes that log in memory** as a ticker-sorted array of `(ticker, byte offset, length)` — lookups are a binary search plus a positioned `pread`, not a line scan.
+- **Serves queries over a Unix domain socket** (`APDB_BIND_ADDRESS`) using a line-delimited JSON request/response protocol: `get_event`, `list_events`, `list_tickers`, `list_asset_ids`, `prefix_search`, and `db_info`. Full wire protocol in [`docs/API.md`](docs/API.md).
+- **Refreshes itself in the background** on a timer (`POLYMARKET_FULL_MARKET_CACHE_REFRESH_INTERVAL`), re-crawling Gamma, compacting the log, and atomically swapping in the new snapshot without dropping in-flight readers. Tickers Gamma stops returning are carried forward rather than evicted, until their `endDate` has been past for more than a 4-hour grace period.
+- **Routes outbound Polymarket requests through an optional SOCKS5 proxy pool** (`SOCKS5_ADDRS`), racing candidates and using whichever answers first (or no proxy, if `NULL_DISABLED` isn't set and the direct/"null" path wins the race).
+
+Not yet true: the roadmap items below (mesh sync, auto-discovered proxies, verified Linux/ARM builds) are still in progress or unwired.
 
 ## Roadmap
 
-The long-term goal is for APDB to be a real service Argus talks to over the network, not a binary you pipe tickers into over stdin — with the reliability and portability guarantees that implies.
+The long-term goal is for APDB to be a fully portable, self-coordinating service that a fleet of Argus instances can share, not just a socket one process happens to be listening on.
 
 ### Platform parity with Argus
 
-Argus itself targets four platform tiers (its own internal tier list runs to eight, but tiers 5–8 are reserved for embedded/mobile targets Argus doesn't run on today):
 
-| Tier | Target triplet                   | Generalizes to                  | Status in APDB                              |
-| ---- | -------------------------------- | ------------------------------- | ------------------------------------------- |
-| 1    | `arm64-apple-darwin`             | Apple Silicon Macs              | Working — the only platform this has run on |
-| 2    | `aarch64-unknown-linux-gnu`      | 64-bit ARM Linux                | Untested                                    |
-| 3    | `armv7l-unknown-linux-gnueabihf` | 32-bit ARMv7 Linux (hard-float) | Untested                                    |
-| 4    | `x86_64-unknown-linux-gnu`       | 64-bit x86 Linux                | Untested                                    |
+| Target triplet                   | Generalizes to                  | Status in APDB                                                                 |
+| --------------------------------- | -------------------------------- | --------------------------------------------------------------------------------- |
+| `arm64-apple-darwin`              | Apple Silicon Macs                | Working — primary development platform                                          |
+| `aarch64-unknown-linux-gnu`       | 64-bit ARM Linux                  | Builds and ships in every release; not yet run in production                     |
+| `armv7l-unknown-linux-gnueabihf`  | 32-bit ARMv7 Linux (hard-float)   | Builds and ships in every release; not yet run in production                     |
+| `x86_64-unknown-linux-gnu`        | 64-bit x86 Linux                  | **Proven in production** — ran 7+ straight days under a dispatcher churning 8,000+ clients |
 
-Nothing in the current source is macOS-specific, so tiers 2–4 may already build, but "may build" and "tested" are different claims — none of these have been exercised, and CI to actually verify them doesn't exist yet.
-
+`build_system/build-everywhere.sh` builds all four targets (via `cargo-zigbuild` for the non-macOS ones) and publishes them to [GitHub releases](https://github.com/The-Sal/argus-polymarket-db/releases) — every release since v1.2.0 ships prebuilt binaries for all four. 
 ### Everything else planned
 
-- **A real on-disk index.** Replace the line-scan lookup in `Database` with something that doesn't get slower as the file grows, and that survives a crash mid-write.
-- **A service boundary.** Give Argus something to query over the network (or a local socket) instead of running this interactively — the exact request/response mechanism between Argus and APDB hasn't been finalized.
-- **Proxy auto-discovery.** Today `SOCKS5_ADDRS` has to be fully populated by hand. The plan is for APDB to derive candidate proxy addresses itself from the default ports of Argus-managed WireGuard instances, so Argus only has to point it at a `WIREPROXY_BIND_ADDRESS` rather than enumerate every proxy.
-- **MeshData.** Multiple APDB-backed Argus instances typically run at once — prod, dev boxes, etc. — some reachable directly, some only through a proxy. MeshData would let those instances share cached data over a Tailscale mesh instead of each one hitting Gamma independently, and, further out, route a request to whichever mesh node can answer it fastest when several cache entries expire at once. None of this exists yet; it's a shape, not a design.
+- **A real service boundary.** Done — Argus (or anything else) talks to APDB over the Unix socket described in [`docs/API.md`](docs/API.md) instead of running it interactively.
+- **A real on-disk index.** Done for lookup — the sorted in-memory index plus positioned reads means a query doesn't get slower as the file grows. Crash recovery is still limited to "drop the torn final line and reload"; there's no write-ahead log or corruption repair.
+- **MeshData (tailnet sync).** Multiple APDB-backed Argus instances typically run at once — prod, dev boxes, etc. — some reachable directly, some only through a proxy. MeshData would let those instances share cached data over a Tailscale mesh instead of each one hitting Gamma independently, and, further out, route a request to whichever mesh node can answer it fastest when several cache entries expire at once. Early scaffolding lives in `src/tailnet_sync.rs` — it can shell out to `tailscale status --json` and enumerate mesh peers — but it isn't wired into `main.rs` yet and doesn't sync anything.
 
 ## Running it
+
+Ideally, don't. It should be managed by Argus automatically. If you're running it manually:
 
 ```
 cargo run
 ```
 
-On first run (no `polymarket_events.db` present) it crawls all open Polymarket events and builds the file; on subsequent runs it loads the existing file. It then drops into a loop that reads a ticker from stdin and prints the matching event, if any. `SOCKS5_ADDRS` (comma-separated `socks5://host:port` entries) and `NULL_DISABLED` are read from `.env`.
+On first run (no database file present at `APDB_DB_PATH`) it crawls all open Polymarket events and builds the file; on subsequent runs it loads the existing file and reindexes it in memory. It then starts a background refresh loop and binds a Unix domain socket, and runs until killed — it no longer reads from stdin.
+
+```
+cargo run -- --version
+```
+
+prints the build version and exits without starting anything.
+
+### Configuration
+
+Read from the real environment or a `.env` file in the working directory (via `dotenvy`):
+
+| Variable                                          | Default                          | Meaning                                                                                 |
+| -------------------------------------------------- | --------------------------------- | ----------------------------------------------------------------------------------------- |
+| `APDB_DB_PATH`                                     | `~/.argus/polymarket_events.db`   | Path to the on-disk NDJSON event log.                                                    |
+| `APDB_BIND_ADDRESS`                                | `/tmp/argus_polymarket_db.sock`   | Unix domain socket path the server listens on.                                           |
+| `POLYMARKET_FULL_MARKET_CACHE_REFRESH_INTERVAL`    | `300`                             | Seconds between background refresh cycles.                                               |
+| `SOCKS5_ADDRS`                                     | *(empty)*                         | Comma-separated `socks5://host:port` proxy pool for outbound Polymarket requests.        |
+| `NULL_DISABLED`                                    | `false`                           | When truthy, disables the direct (no-proxy) path from the proxy race.                    |
+
+See [`docs/API.md`](docs/API.md) for the full request/response protocol served over the socket, including an example using `socat`.
+
+## Compatibility
+APDB is fully compatible with Argus 1.1.0 and later. Track the [Argus PR](https://github.com/The-Sal/Argus/pull/94) which introduces APDB to the codebase.
