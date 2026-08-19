@@ -1,4 +1,5 @@
 use std::fs::File;
+use crate::utils::now_unix;
 use std::sync::{Arc, RwLock};
 use std::os::unix::fs::FileExt;
 use std::io::{self, BufRead, BufReader};
@@ -38,12 +39,6 @@ pub(crate) struct Snapshot {
     pub(crate) format_version: u32,
 }
 
-fn now_unix() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-}
 
 /// Sorted input; for each run of equal tickers, keeps only the last
 /// occurrence (later in the file = more recent write) — mirrors the

@@ -1,6 +1,7 @@
 use std::fs::File;
 use std::sync::Arc;
 use crate::poly_api;
+use crate::utils::now_unix;
 use std::path::{Path, PathBuf};
 use crate::poly_api::OpenEventsIter;
 use std::io::{self, BufWriter, Write};
@@ -32,12 +33,6 @@ fn parse_rfc3339_unix(date_str: &str) -> Option<i64> {
         .map(|dt| dt.unix_timestamp())
 }
 
-fn now_unix() -> u64 {
-    SystemTime::now()
-        .duration_since(UNIX_EPOCH)
-        .unwrap()
-        .as_secs()
-}
 
 /// Shared with `mesh_sync.rs` so a network-pulled database and a locally
 /// crawled one land in the same `.tmp` staging location before either is

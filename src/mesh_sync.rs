@@ -1,14 +1,15 @@
-use crate::database::{Snapshot, DB_FORMAT_VERSION};
-use crate::p2p_db_server::{CONTROL_PORT, MAX_CONTROL_LINE_BYTES, RAW_TRANSFER_PORT};
+use std::fs::File;
+use std::sync::Arc;
+use std::path::Path;
+use crate::utils::now_unix;
+use flate2::read::GzDecoder;
 use crate::refresh::tmp_path_for;
 use crate::tailnet_fns::TailnetFns;
-use flate2::read::GzDecoder;
-use std::fs::File;
-use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
 use std::net::{SocketAddr, TcpStream};
-use std::path::Path;
-use std::sync::Arc;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use crate::database::{Snapshot, DB_FORMAT_VERSION};
+use std::io::{self, BufRead, BufReader, BufWriter, Read, Write};
+use crate::p2p_db_server::{CONTROL_PORT, MAX_CONTROL_LINE_BYTES, RAW_TRANSFER_PORT};
 
 /// Connect+read timeout for the lightweight `db_info` handshake — kept
 /// short since this fans out to every peer on the tailnet and a single
@@ -22,9 +23,6 @@ const PULL_TIMEOUT_SECS: u64 = 120;
 /// counter, matching `TRANSFER_CHUNK_BYTES` on the sending side.
 const PULL_PROGRESS_CHUNK_BYTES: usize = 256 * 1024;
 
-fn now_unix() -> u64 {
-    SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
-}
 
 /// Boot-time client/orchestrator role: asks every tailnet peer how old
 /// their database is, and if any of them is within `refresh_interval_secs`,

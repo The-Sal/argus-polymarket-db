@@ -1,28 +1,224 @@
 {
   "symbols_map": {
-    "ok_response": [
-      "a1719709b3ca4452a07d8d29fc96d272fec5c0094862fdbc4f476582a4e941f0",
+    "VersionFile": [
+      "ea62691c7d033f32a99d116a6bca6d75fda7e2b13e85dbfc9ddb59a11d13de57",
+      "struct"
+    ],
+    "handle_db_info": [
+      "4ff57ac44933f4ca76d556769695995fd057555a0deae31735b2ea9d2aa8c0ba",
+      "function"
+    ],
+    "OpenEventsIter::next": [
+      "c4f82c3d41752af3facf32f8e523c530573eb5f6bdf471f16f0606ee1295e623",
+      "method"
+    ],
+    "P2pDbServer::run_server": [
+      "b5f343d24e09bc03ee124cd2154712eb90292910bf9141f4c9fb2e688f5cf002",
+      "method"
+    ],
+    "IndexEntry": [
+      "b1e6df52143ed0461575431bafa26bcd1c202771eab55ac763a146b66edd88b5",
+      "struct"
+    ],
+    "Snapshot::read_value": [
+      "d284c26f8fd15e864f4db0a74dd96d315f4a7859c20be5403941bed16b9c9cc7",
+      "method"
+    ],
+    "version_string": [
+      "ac91c7bb3e2c22380b811619d58a074c2cc6cbeee2cfb9c3c56fbf58f724792f",
+      "function"
+    ],
+    "handle_connection": [
+      "070a53f52e656d06adff2fd970a5768505078167c3d4e9a926b8d02fe02643d6",
+      "function"
+    ],
+    "StderrLogger": [
+      "bef80b02d301c30faf2a11b64107d6ae913b3a51f2df11efb9cb5c4f66fd5296",
+      "struct"
+    ],
+    "merge_carry_forward": [
+      "91e410422bb041a459fa2f4450b82558fb41a524cd1ec5b3977b1f852fa6fe2d",
+      "function"
+    ],
+    "PolymarketEvent": [
+      "841c532d3742ec7df156f4d18c698a20ef8f1270b1ef0268685b4fe7a2e4c79c",
+      "struct"
+    ],
+    "try_bootstrap_from_peers": [
+      "39ded93ee19b6943e81fdf80ed826200e65dd6d3637208773b3628c19f8d493b",
+      "function"
+    ],
+    "check_and_print_version": [
+      "e52c45ee99bdc58ba16be20adb81b7c58e92e80753a4f6fcc3334d4a6ddad7c1",
+      "function"
+    ],
+    "PolyMarketError::fmt": [
+      "5b4a5505d23e6d38013762e9edb53b487475f32b6b2f4e500e052ae0dcc71b70",
+      "method"
+    ],
+    "FetchEventsParams::default": [
+      "9b9695efdf55f017e63dae6d4f0804ce485fdc7912af2324d0f299ee62eab1bc",
+      "method"
+    ],
+    "full_crawl_and_compact": [
+      "bf23efcaaae4a870256b3893e9f4b53384d5532e2f11e90529d64d67ad3e7373",
+      "function"
+    ],
+    "version_tuple": [
+      "3b3fd8c114722161ed107db7a81d1d2587743e79de51d35a4c38a7c5034f1073",
+      "function"
+    ],
+    "OpenEventsIter::default": [
+      "41406c02468fd751c7c2349fe5358640f95da0713d406b189745c1d2f9439c81",
+      "method"
+    ],
+    "write_response": [
+      "5cfa414e8534b474fd1ccf16d1314a37bebe7386241f4a90b10267134aec84c7",
+      "function"
+    ],
+    "Envelope": [
+      "c179250f8b5d0706f5a4d56dfec5d874eefb90a809e17342210d2c76135bac50",
+      "struct"
+    ],
+    "Snapshot::from_file": [
+      "a28a4746313702db65febd80beedac29ee9b85b112abdee2861420cec4d50af7",
+      "method"
+    ],
+    "StderrLogger::log": [
+      "7d4f3cf8ba273f1f25e0e5d6e7c490e1cb0cbdd74389130765476aefb00d6c8f",
+      "method"
+    ],
+    "spawn_refresh_loop": [
+      "1fa5891ff2f48e90aabb26240a287a8aa986104729234a753d37b514b16d6cdc",
+      "function"
+    ],
+    "OpenEventsIter": [
+      "adf647db0014f253cc94af79d0edf597f0620232604d6706bd9f27bbb18637c5",
+      "struct"
+    ],
+    "Snapshot::cursor_range": [
+      "1651df5fbd12f9784f09c419b6522daabc75825c5c60aab09f20c4e9666a96d3",
+      "method"
+    ],
+    "stream_snapshot": [
+      "ca28bf3b045299b134f3ec0d8b90d9cc4c38680c9b4645798bf5133f46874eca",
+      "function"
+    ],
+    "find_proxy_addr": [
+      "2222205be9cf5b45d69c12ac150abc6a62d73eed5b3edfb9aa1c0eae05e61846",
+      "function"
+    ],
+    "Snapshot::read_raw": [
+      "1c9d78f1fa8f56f1ce45413ee3f23b92c410d470a9f99b0871854155949472e0",
+      "method"
+    ],
+    "truncate_for_log": [
+      "37ba263266ad480d08d4dffabb1f02efe5df61fc988387f77a0705a65c631567",
+      "function"
+    ],
+    "StderrLogger::flush": [
+      "b2d94cf51bf7818a03047a3f6103701b6861ee829ce16132bb05cba9fb227841",
+      "method"
+    ],
+    "fetch_events": [
+      "cce99c6a91383f807a45a1c2274e85b2574f4495d55caff0f7091365d182af91",
+      "function"
+    ],
+    "format_duration": [
+      "ddf917e16aa6b1013d298ddd7dd450299cf0264ee21ed65615bd0c56762be828",
+      "function"
+    ],
+    "get_proxy_agent": [
+      "66123e5bfaeea791b2f0dc2b283abe697fb73dfed7d945f687c0f1210a4c75cd",
+      "function"
+    ],
+    "Database::snapshot": [
+      "1faf1ff8e7e0b5cc0cde54ff05b9ed7ee4758b738f0f630307fde33ea4fe8ebe",
+      "method"
+    ],
+    "rss_mb": [
+      "fcf2763e78b98d7eb43bb23b7a336dc7e134422280367520d3530a332c523b79",
+      "function"
+    ],
+    "TailnetFns::tailscale_available": [
+      "32a4ce30a4cdb5e1f1c58022afcf8af0ceda4c6128a4d9bccb9e044a34bb0c8e",
+      "method"
+    ],
+    "fetch_all_markets_cached": [
+      "dd2d7a272ebe3c2eedbaea7f4dba47863d8b01ecef02a88fbde9730d4fab5778",
+      "function"
+    ],
+    "handle_list_tickers": [
+      "ca53e330e9a4db0269317941b47903f35539a76fde28c6e6e4535dd988942823",
+      "function"
+    ],
+    "Database": [
+      "22acaf8a9e823c158150f6b58f19f488b5147929a162c198fa63dfc7a7d2b7fd",
+      "struct"
+    ],
+    "resolve_limit": [
+      "a1702a5b4d745c9fb5a7a076159ab284d37dc93e07f1f2a2e9c16f821e330685",
+      "function"
+    ],
+    "StderrLogger::enabled": [
+      "251489e9fac284c3659c4bb8c50e4a6c366665394b6a4313765a4dd34f901eb8",
+      "method"
+    ],
+    "handle_get_event": [
+      "c09777c648fa42ac06ba12b477f17ab8b3e293c34870a1b12e40160fb97fc090",
       "function"
     ],
     "extract_asset_ids": [
       "f69bce81df55bc88b98fde7c61c84fb859a79fabbf62fe9589532879c0c2cba1",
       "function"
     ],
-    "spawn_refresh_loop": [
-      "1fa5891ff2f48e90aabb26240a287a8aa986104729234a753d37b514b16d6cdc",
+    "P2pDbServer::handle_request_pull": [
+      "e13af0535a47aa8bf21f720ab372a6683e44804eee3030320e96e8ed827cc0ff",
+      "method"
+    ],
+    "dispatch": [
+      "33447cc4509517a0fe4cee3ddd02fabee326708691e0ae5781d04374921a05cc",
       "function"
     ],
-    "TailnetFns::get_peers": [
-      "c1a9f30c43205bc3b6c40f098dde2a996c8c18e3fe74287cceb1f4e0c7312f6e",
+    "init_logging": [
+      "7d574b54b7ec0d94e142315dd39ffe654f5d0a5c980ca186a02df6798a745a41",
+      "function"
+    ],
+    "GetEventParams": [
+      "94855f9846f01d46951141694a221901d10bdcdf415966b94fbe336133263ea6",
+      "struct"
+    ],
+    "handle_list_asset_ids": [
+      "9cb5446cdd197d46c326531882942f2583ecc6b01876016f2ea40d9dc1fa5b35",
+      "function"
+    ],
+    "now_hms_utc": [
+      "93ca74ec06121b64c8bf85e0f039cc0ca5bc390134d6297f11a5d85752f80467",
+      "function"
+    ],
+    "parse_rfc3339_unix": [
+      "f465ebcd1f7cfb960765e336c825320c0ccd30fa57017ac7dc75c9dab7272f5b",
+      "function"
+    ],
+    "pull_from_peer": [
+      "2feccbc775eb6723866ddc3cf83c8324923e5c125b1e92146d21e14829c23063",
+      "function"
+    ],
+    "err_response": [
+      "17157dfa84756f2850bd613d732ace09df8d45cfc5a85ae47b929299714bcccd",
+      "function"
+    ],
+    "Snapshot::find": [
+      "938d4767a8d69af5943d984eb7218314b306f2fad0148ecea71b6f30a7e1621a",
+      "method"
+    ],
+    "TailnetFns::get_my_address": [
+      "45c2593e7db215cae2a64d0573fd5b869431034763b3d5466186ef55b0a29742",
       "method"
     ],
     "db_info_json": [
       "de14b11c593d9078aa691d0822d14b89d1063d66b3bfdc412867ef84ae1ffda2",
       "function"
-    ],
-    "P2pDbServer::run_server": [
-      "b5f343d24e09bc03ee124cd2154712eb90292910bf9141f4c9fb2e688f5cf002",
-      "method"
     ],
     "TailnetFns": [
       "d3af136c3bb66c22cce72fe3efb4831d4af56d5420b810e379364ed6eea3a0ff",
@@ -32,328 +228,132 @@
       "97b6d4683c53ab91b176f90529b8feb71582d1e10e5a597572ce44af6f6401d9",
       "method"
     ],
-    "truncate_for_log": [
-      "37ba263266ad480d08d4dffabb1f02efe5df61fc988387f77a0705a65c631567",
-      "function"
-    ],
-    "OpenEventsIter::default": [
-      "41406c02468fd751c7c2349fe5358640f95da0713d406b189745c1d2f9439c81",
-      "method"
+    "PrefixSearchParams": [
+      "1170a0379dce5feac2607e46f8bfe2948bae6795e620ff7219a9883d1133f5ea",
+      "struct"
     ],
     "handle_list_events": [
       "43449b940bc14fd458f5d52d1fc2b5408229de52ec30d0a2c22cdf8ed912a55f",
       "function"
     ],
-    "Snapshot::cursor_range": [
-      "1651df5fbd12f9784f09c419b6522daabc75825c5c60aab09f20c4e9666a96d3",
-      "method"
-    ],
-    "handle_list_tickers": [
-      "ca53e330e9a4db0269317941b47903f35539a76fde28c6e6e4535dd988942823",
-      "function"
-    ],
-    "handle_prefix_search": [
-      "31b03295c1bc8322a2701f36223df7c210e110f0f68d2c7d83a307d32b7aa3fd",
-      "function"
-    ],
-    "find_proxy_addr": [
-      "2222205be9cf5b45d69c12ac150abc6a62d73eed5b3edfb9aa1c0eae05e61846",
-      "function"
-    ],
-    "P2pDbServer": [
-      "8249849c0d4153d794f7379325a9d4018795ad483bee430beeea13ed4d07e04f",
-      "struct"
-    ],
-    "Database::snapshot": [
-      "1faf1ff8e7e0b5cc0cde54ff05b9ed7ee4758b738f0f630307fde33ea4fe8ebe",
-      "method"
-    ],
     "P2pDbServer::handle_connection": [
       "70caacb2bee7807a0151178f62ba09f2d5506943d2769c170176241d110ffa91",
       "method"
     ],
-    "TailnetFns::tailscale_status": [
-      "9770e2419a2446548f9aff02fcb42586c218254fae947250726873eb30d76bd0",
-      "method"
-    ],
-    "format_duration": [
-      "ddf917e16aa6b1013d298ddd7dd450299cf0264ee21ed65615bd0c56762be828",
-      "function"
-    ],
-    "P2pDbServer::handle_request_pull": [
-      "e13af0535a47aa8bf21f720ab372a6683e44804eee3030320e96e8ed827cc0ff",
-      "method"
-    ],
-    "version_tuple": [
-      "3b3fd8c114722161ed107db7a81d1d2587743e79de51d35a4c38a7c5034f1073",
-      "function"
-    ],
-    "StderrLogger::enabled": [
-      "251489e9fac284c3659c4bb8c50e4a6c366665394b6a4313765a4dd34f901eb8",
-      "method"
-    ],
-    "merge_carry_forward": [
-      "91e410422bb041a459fa2f4450b82558fb41a524cd1ec5b3977b1f852fa6fe2d",
-      "function"
-    ],
-    "CursorParams": [
-      "19c5552eeb21d752a68cf07099ab32167a57a66b7cf76e47ac506c515bf65667",
-      "struct"
-    ],
-    "PrefixSearchParams": [
-      "1170a0379dce5feac2607e46f8bfe2948bae6795e620ff7219a9883d1133f5ea",
-      "struct"
-    ],
-    "VersionFile": [
-      "ea62691c7d033f32a99d116a6bca6d75fda7e2b13e85dbfc9ddb59a11d13de57",
-      "struct"
-    ],
-    "StderrLogger::flush": [
-      "b2d94cf51bf7818a03047a3f6103701b6861ee829ce16132bb05cba9fb227841",
-      "method"
-    ],
-    "write_json_line": [
-      "f4ac0210b9cc1b61c99e588ff20dbe639451f517a82d2482568f2800f9dcfca2",
-      "function"
-    ],
-    "FetchEventsParams": [
-      "55bd190b0e578982c011a24531c44e28f38dad6471bb52123f3d70745d148262",
-      "struct"
-    ],
-    "run": [
-      "17899e5ab2cbcebfe75cd4bcacaa364611f811bb4dfc24af4953afabe44786a0",
-      "function"
-    ],
-    "write_response": [
-      "5cfa414e8534b474fd1ccf16d1314a37bebe7386241f4a90b10267134aec84c7",
-      "function"
-    ],
-    "TailnetFns::get_my_address": [
-      "45c2593e7db215cae2a64d0573fd5b869431034763b3d5466186ef55b0a29742",
-      "method"
-    ],
-    "get_proxy_agent": [
-      "66123e5bfaeea791b2f0dc2b283abe697fb73dfed7d945f687c0f1210a4c75cd",
-      "function"
-    ],
-    "OpenEventsIter::next": [
-      "c4f82c3d41752af3facf32f8e523c530573eb5f6bdf471f16f0606ee1295e623",
-      "method"
-    ],
-    "dispatch": [
-      "33447cc4509517a0fe4cee3ddd02fabee326708691e0ae5781d04374921a05cc",
+    "ok_response": [
+      "a1719709b3ca4452a07d8d29fc96d272fec5c0094862fdbc4f476582a4e941f0",
       "function"
     ],
     "P2pDbServer::new": [
       "3ffc3ed17adb7db1339a7bda9b3b730f9d06b415db51a3a98c8ea0b682118458",
       "method"
     ],
-    "stream_snapshot": [
-      "ca28bf3b045299b134f3ec0d8b90d9cc4c38680c9b4645798bf5133f46874eca",
-      "function"
-    ],
-    "rss_mb": [
-      "fcf2763e78b98d7eb43bb23b7a336dc7e134422280367520d3530a332c523b79",
-      "function"
-    ],
-    "fetch_all_markets_cached": [
-      "dd2d7a272ebe3c2eedbaea7f4dba47863d8b01ecef02a88fbde9730d4fab5778",
-      "function"
-    ],
-    "Database": [
-      "22acaf8a9e823c158150f6b58f19f488b5147929a162c198fa63dfc7a7d2b7fd",
-      "struct"
-    ],
-    "TailnetFns::tailscale_available": [
-      "32a4ce30a4cdb5e1f1c58022afcf8af0ceda4c6128a4d9bccb9e044a34bb0c8e",
-      "method"
-    ],
-    "AssetIdCursorParams": [
-      "ddd96a8835f7875ae64147aea5a99668e6e44264f291a525bc5b40f31a29f37f",
-      "struct"
-    ],
-    "query_peer_db_info": [
-      "557b568cb5c9e2a9d56bd728b4d9ff2676a0447792529011029af4d931096731",
-      "function"
-    ],
-    "parse_rfc3339_unix": [
-      "f465ebcd1f7cfb960765e336c825320c0ccd30fa57017ac7dc75c9dab7272f5b",
-      "function"
-    ],
-    "OpenEventsIter::new": [
-      "1a210869f7a6f97114f64db0ff69eadf7a9fbdfd44a17c061ff088ceed11ffb1",
-      "method"
-    ],
     "env_or": [
       "cc8db4346e1e64de7d2017a283571620e0439c914a37f9f845e2ba934bf2fa6d",
       "function"
     ],
-    "parse_params": [
-      "8077b03d3d059e42467fdc5da09a5cab2c424204737e55f5300714d0fd7f3011",
+    "now_unix": [
+      "1820d7f274c49cad0e4c002ea36bbcffc4c084af08f42d5dd3f471146b50f553",
       "function"
     ],
-    "Snapshot::read_raw": [
-      "1c9d78f1fa8f56f1ce45413ee3f23b92c410d470a9f99b0871854155949472e0",
-      "method"
-    ],
-    "version": [
-      "9c9d91fd93efdaa81b2e5b592a1562e308fdbe172c69af0b1fbce5d19c7c007d",
+    "handle_prefix_search": [
+      "31b03295c1bc8322a2701f36223df7c210e110f0f68d2c7d83a307d32b7aa3fd",
       "function"
     ],
-    "try_bootstrap_from_peers": [
-      "39ded93ee19b6943e81fdf80ed826200e65dd6d3637208773b3628c19f8d493b",
-      "function"
-    ],
-    "Snapshot::prefix_range": [
-      "19dd0f719469f5c805b5895e0a77e02f31eebceca214ec845ebf8f2c2a0a810e",
-      "method"
-    ],
-    "err_response": [
-      "17157dfa84756f2850bd613d732ace09df8d45cfc5a85ae47b929299714bcccd",
-      "function"
-    ],
-    "FetchEventsParams::default": [
-      "9b9695efdf55f017e63dae6d4f0804ce485fdc7912af2324d0f299ee62eab1bc",
-      "method"
-    ],
-    "OpenEventsIter": [
-      "adf647db0014f253cc94af79d0edf597f0620232604d6706bd9f27bbb18637c5",
-      "struct"
-    ],
-    "handle_get_event": [
-      "c09777c648fa42ac06ba12b477f17ab8b3e293c34870a1b12e40160fb97fc090",
-      "function"
-    ],
-    "fetch_events": [
-      "cce99c6a91383f807a45a1c2274e85b2574f4495d55caff0f7091365d182af91",
-      "function"
-    ],
-    "GetEventParams": [
-      "94855f9846f01d46951141694a221901d10bdcdf415966b94fbe336133263ea6",
-      "struct"
-    ],
-    "version_string": [
-      "ac91c7bb3e2c22380b811619d58a074c2cc6cbeee2cfb9c3c56fbf58f724792f",
-      "function"
-    ],
-    "StderrLogger": [
-      "bef80b02d301c30faf2a11b64107d6ae913b3a51f2df11efb9cb5c4f66fd5296",
-      "struct"
-    ],
-    "PolyMarketError::fmt": [
-      "5b4a5505d23e6d38013762e9edb53b487475f32b6b2f4e500e052ae0dcc71b70",
-      "method"
-    ],
-    "handle_db_info": [
-      "4ff57ac44933f4ca76d556769695995fd057555a0deae31735b2ea9d2aa8c0ba",
-      "function"
-    ],
-    "check_and_print_version": [
-      "e52c45ee99bdc58ba16be20adb81b7c58e92e80753a4f6fcc3334d4a6ddad7c1",
-      "function"
-    ],
-    "handle_line": [
-      "3c8ca9b548dab45a9081c8d58c31c4579083d4c8cc1baec7ad0ef30313eafe5c",
-      "function"
-    ],
-    "proxy_addrs": [
-      "2857c5c9d14051152b58baf1daba32720d0a39d25270f53c2d6ef09241ce1f81",
-      "function"
-    ],
-    "full_crawl_and_compact": [
-      "bf23efcaaae4a870256b3893e9f4b53384d5532e2f11e90529d64d67ad3e7373",
-      "function"
-    ],
-    "PolyMarketError": [
-      "9b268f1137f73705765446d5a5abd0d2255d4095b370de522d7c60d64def071c",
-      "struct"
-    ],
-    "main": [
-      "e8e2ddb9019f31b0149741353b9206fb610ed2dfbd4c8df6c92182af7e036d27",
-      "function"
-    ],
-    "now_hms_utc": [
-      "93ca74ec06121b64c8bf85e0f039cc0ca5bc390134d6297f11a5d85752f80467",
-      "function"
-    ],
-    "init_logging": [
-      "7d574b54b7ec0d94e142315dd39ffe654f5d0a5c980ca186a02df6798a745a41",
-      "function"
-    ],
-    "Envelope": [
-      "c179250f8b5d0706f5a4d56dfec5d874eefb90a809e17342210d2c76135bac50",
-      "struct"
-    ],
-    "handle_list_asset_ids": [
-      "9cb5446cdd197d46c326531882942f2583ecc6b01876016f2ea40d9dc1fa5b35",
+    "query_peer_db_info": [
+      "557b568cb5c9e2a9d56bd728b4d9ff2676a0447792529011029af4d931096731",
       "function"
     ],
     "is_null_disabled": [
       "3727ab41e092a0f91a473604a54270e0f8a4adde99fc688dc501f8b0d0e9d222",
       "function"
     ],
-    "Snapshot": [
-      "b26b0b51d028408057c7cc7b52cfee44638476daaf4bafa15c42d308dc2884ff",
+    "write_json_line": [
+      "f4ac0210b9cc1b61c99e588ff20dbe639451f517a82d2482568f2800f9dcfca2",
+      "function"
+    ],
+    "PolyMarketError": [
+      "9b268f1137f73705765446d5a5abd0d2255d4095b370de522d7c60d64def071c",
       "struct"
     ],
-    "dedupe_keep_last": [
-      "ffd4107c195830368ede45bff148bda3003b4e7cdf98e356e0fde7a4afdd9ddb",
+    "TailnetFns::tailscale_status": [
+      "9770e2419a2446548f9aff02fcb42586c218254fae947250726873eb30d76bd0",
+      "method"
+    ],
+    "TailnetFns::get_peers": [
+      "c1a9f30c43205bc3b6c40f098dde2a996c8c18e3fe74287cceb1f4e0c7312f6e",
+      "method"
+    ],
+    "proxy_addrs": [
+      "2857c5c9d14051152b58baf1daba32720d0a39d25270f53c2d6ef09241ce1f81",
       "function"
     ],
     "bind": [
       "96c679a56244450a07c58481f0b2020f4d570a492045c737d414f617fcc8608a",
       "function"
     ],
-    "resolve_limit": [
-      "a1702a5b4d745c9fb5a7a076159ab284d37dc93e07f1f2a2e9c16f821e330685",
+    "run": [
+      "17899e5ab2cbcebfe75cd4bcacaa364611f811bb4dfc24af4953afabe44786a0",
       "function"
     ],
-    "now_unix": [
-      "d7794684224530a6da086ac621b27471ebe4ca58abc54c5e760092492e0d67da",
+    "version": [
+      "9c9d91fd93efdaa81b2e5b592a1562e308fdbe172c69af0b1fbce5d19c7c007d",
       "function"
-    ],
-    "IndexEntry": [
-      "b1e6df52143ed0461575431bafa26bcd1c202771eab55ac763a146b66edd88b5",
-      "struct"
-    ],
-    "handle_connection": [
-      "070a53f52e656d06adff2fd970a5768505078167c3d4e9a926b8d02fe02643d6",
-      "function"
-    ],
-    "Snapshot::read_value": [
-      "d284c26f8fd15e864f4db0a74dd96d315f4a7859c20be5403941bed16b9c9cc7",
-      "method"
-    ],
-    "Snapshot::find": [
-      "938d4767a8d69af5943d984eb7218314b306f2fad0148ecea71b6f30a7e1621a",
-      "method"
-    ],
-    "pull_from_peer": [
-      "2feccbc775eb6723866ddc3cf83c8324923e5c125b1e92146d21e14829c23063",
-      "function"
-    ],
-    "StderrLogger::log": [
-      "7d4f3cf8ba273f1f25e0e5d6e7c490e1cb0cbdd74389130765476aefb00d6c8f",
-      "method"
-    ],
-    "Snapshot::from_file": [
-      "a28a4746313702db65febd80beedac29ee9b85b112abdee2861420cec4d50af7",
-      "method"
     ],
     "tmp_path_for": [
       "1f41e433637d0e25768cc3cf4918a3b61a455db38c0c1ab81483d1daf8c06fe8",
       "function"
     ],
+    "dedupe_keep_last": [
+      "ffd4107c195830368ede45bff148bda3003b4e7cdf98e356e0fde7a4afdd9ddb",
+      "function"
+    ],
+    "parse_params": [
+      "8077b03d3d059e42467fdc5da09a5cab2c424204737e55f5300714d0fd7f3011",
+      "function"
+    ],
+    "CursorParams": [
+      "19c5552eeb21d752a68cf07099ab32167a57a66b7cf76e47ac506c515bf65667",
+      "struct"
+    ],
+    "FetchEventsParams": [
+      "55bd190b0e578982c011a24531c44e28f38dad6471bb52123f3d70745d148262",
+      "struct"
+    ],
+    "OpenEventsIter::new": [
+      "1a210869f7a6f97114f64db0ff69eadf7a9fbdfd44a17c061ff088ceed11ffb1",
+      "method"
+    ],
     "Database::new": [
       "d23b9e57b50a0a14e2e3facc95175f57ca8ac102c4c1688beac493d8e77f97ff",
       "method"
     ],
-    "PolymarketEvent": [
-      "841c532d3742ec7df156f4d18c698a20ef8f1270b1ef0268685b4fe7a2e4c79c",
+    "P2pDbServer": [
+      "8249849c0d4153d794f7379325a9d4018795ad483bee430beeea13ed4d07e04f",
       "struct"
+    ],
+    "Snapshot::prefix_range": [
+      "19dd0f719469f5c805b5895e0a77e02f31eebceca214ec845ebf8f2c2a0a810e",
+      "method"
+    ],
+    "Snapshot": [
+      "b26b0b51d028408057c7cc7b52cfee44638476daaf4bafa15c42d308dc2884ff",
+      "struct"
+    ],
+    "AssetIdCursorParams": [
+      "ddd96a8835f7875ae64147aea5a99668e6e44264f291a525bc5b40f31a29f37f",
+      "struct"
+    ],
+    "main": [
+      "e8e2ddb9019f31b0149741353b9206fb610ed2dfbd4c8df6c92182af7e036d27",
+      "function"
+    ],
+    "handle_line": [
+      "3c8ca9b548dab45a9081c8d58c31c4579083d4c8cc1baec7ad0ef30313eafe5c",
+      "function"
     ]
   },
   "major_version": 2,
   "minor_version": 0,
-  "patch_version": 2
+  "patch_version": 1
 }

@@ -1,13 +1,13 @@
 use crate::api;
-use crate::database::{Database, Snapshot};
-use crate::tailnet_fns::TailnetFns;
-use flate2::write::GzEncoder;
 use flate2::Compression;
-use std::io::{BufRead, BufReader, BufWriter, Read, Write};
-use std::net::{IpAddr, TcpListener, TcpStream};
-use std::os::unix::fs::FileExt;
 use std::sync::{Arc, Mutex};
+use flate2::write::GzEncoder;
+use std::os::unix::fs::FileExt;
+use crate::tailnet_fns::TailnetFns;
 use std::time::{Duration, Instant};
+use crate::database::{Database, Snapshot};
+use std::net::{IpAddr, TcpListener, TcpStream};
+use std::io::{BufRead, BufReader, BufWriter, Read, Write};
 
 pub(crate) const CONTROL_PORT: u16 = 9563;
 /// Carries raw compressed database bytes only — never JSON, never NDJSON.

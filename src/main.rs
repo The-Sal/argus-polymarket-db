@@ -1,19 +1,21 @@
 mod api;
 mod proxy;
+mod utils;
 mod server;
 mod refresh;
 mod version;
 mod database;
 mod poly_api;
+mod mesh_sync;
 mod tailnet_fns;
 mod p2p_db_server;
-mod mesh_sync;
 use std::fs::File;
 use std::sync::Arc;
 use std::path::PathBuf;
 use shellexpand::tilde;
 use database::{Database, Snapshot};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
 
 
 const DEFAULT_DB_PATH: &str = "~/.argus/polymarket_events.db";
