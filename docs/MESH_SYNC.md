@@ -172,6 +172,11 @@ operation the sender runs per `request_pull`, entirely inside
      - a connection from an IP other than the requester's is refused
        and polling continues (another peer racing onto the port)
      - deadline reached with no matching connection → log & stop
+5.5. force the accepted stream back to blocking mode
+     — on macOS/BSD, `accept()` on a non-blocking listener hands back
+       an already non-blocking stream (inherited, unlike on Linux),
+       which would silently defeat the read/write timeouts set below;
+       see docs/PLATFORM_NOTES.md for the full story
 6. stream_snapshot(): gzip(level 9)-compress the pinned snapshot's
    file, 256KB at a time, straight onto the accepted connection
 7. drop the 9564 listener (closes the port)
@@ -230,14 +235,21 @@ read would read zero bytes immediately. `read_at` never touches any shared
 cursor.
 
 **Receiver** (`pull_from_peer` in `mesh_sync.rs`): wraps the socket in
-`flate2::read::GzDecoder` and `io::copy`s straight into a `BufWriter`
-over the on-disk `.tmp` file — std's default bounded internal buffer both
-directions, never materializing the decompressed database in memory.
+`flate2::read::GzDecoder` and copies straight into a `BufWriter` over the
+on-disk `.tmp` file in fixed `PULL_PROGRESS_CHUNK_BYTES` (256KB) reads —
+a hand-rolled loop rather than `io::copy`, purely so each chunk's size is
+visible to print a `\r`-animated running total (`Pulling from <ip>: N.N MB`)
+to stdout as the transfer progresses. Behaves identically to `io::copy` for
+error purposes: a truncated/corrupted stream still fails via `GzDecoder`'s
+gzip-trailer check on `read()`, before any ticker JSON is parsed. The
+progress line goes to stdout, never stderr, so it never interleaves with
+this daemon's `log`-facade output (see `main.rs`'s `StderrLogger`); a final
+`println!()` once the loop ends moves the cursor off that line.
 
-**Memory ceiling on both ends:** a fixed constant (256KB sender-side chunk
-buffer; std's small default `io::copy` buffer receiver-side), independent of
-whether the database is 10MB or 2GB — this is the same design premise the
-rest of APDB is built on (see the top-level README's "Why").
+**Memory ceiling on both ends:** a fixed constant (256KB on both the sender's
+chunk buffer and the receiver's), independent of whether the database is
+10MB or 2GB — this is the same design premise the rest of APDB is built on
+(see the top-level README's "Why").
 
 ## Validation & atomicity order
 
@@ -293,6 +305,7 @@ than leaving a multi-hundred-MB partial download on disk.
 | `CONTROL_WRITE_TIMEOUT_SECS`  | 10s    | `p2p_db_server.rs`   | Write timeout on `9563` connections (server side) |
 | `MAX_CONTROL_LINE_BYTES`      | 64KB   | `p2p_db_server.rs`   | Hard cap on a single control-plane JSON line |
 | `PEER_QUERY_TIMEOUT_SECS`     | 5s     | `mesh_sync.rs`       | Connect+read timeout for the `db_info` fan-out at boot |
+| `PULL_PROGRESS_CHUNK_BYTES`   | 256KB  | `mesh_sync.rs`       | Receiver decompress/write chunk size; also the granularity of the `\r`-animated MB-pulled progress line |
 
 Only one raw transfer can be in flight **per sender** at a time (the
 `sending` mutex in `P2pDbServer`) — this is a deliberate simplicity choice,
@@ -320,3 +333,5 @@ reconsidering this assumption.
 - [`docs/db_specs/v1.md`](db_specs/v1.md) — the on-disk format
   (`built_at_unix`, `format_version`) that both the TTL check and the
   `db_info` op depend on.
+- [`docs/PLATFORM_NOTES.md`](PLATFORM_NOTES.md) — the macOS/BSD
+  `accept()`-inherits-non-blocking quirk that step 5.5 above works around.

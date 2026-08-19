@@ -17,6 +17,10 @@ const PEER_QUERY_TIMEOUT_SECS: u64 = 5;
 /// Idle timeout for the bulk pull itself, once a peer has agreed to send —
 /// see the matching constant and comment in `p2p_db_server.rs`.
 const PULL_TIMEOUT_SECS: u64 = 120;
+/// Read/write chunk size for the decompress-and-write loop in
+/// `pull_from_peer` — also the granularity of the `\r`-animated progress
+/// counter, matching `TRANSFER_CHUNK_BYTES` on the sending side.
+const PULL_PROGRESS_CHUNK_BYTES: usize = 256 * 1024;
 
 fn now_unix() -> u64 {
     SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs()
@@ -163,10 +167,30 @@ fn pull_from_peer(peer_ip: &str, db_path: &Path) -> io::Result<Arc<Snapshot>> {
     let result = (|| -> io::Result<Arc<Snapshot>> {
         let mut decoder = GzDecoder::new(BufReader::new(raw_stream));
         let mut file_writer = BufWriter::new(File::create(&tmp_path)?);
-        // A truncated or corrupted stream fails right here — GzDecoder
-        // checks the gzip trailer (CRC32 + uncompressed size) and errors on
-        // a short/garbled stream, before any ticker JSON is even parsed.
-        io::copy(&mut decoder, &mut file_writer)?;
+        // Hand-rolled in place of `io::copy` so each chunk's byte count is
+        // visible for the progress counter below; behaves identically for
+        // error purposes — a truncated or corrupted stream still fails here
+        // when GzDecoder's `read` hits the gzip trailer (CRC32 +
+        // uncompressed size) check, before any ticker JSON is even parsed.
+        let mut buf = vec![0u8; PULL_PROGRESS_CHUNK_BYTES];
+        let mut total_bytes: u64 = 0;
+        let mut stdout = io::stdout();
+        loop {
+            let n = decoder.read(&mut buf)?;
+            if n == 0 {
+                break;
+            }
+            file_writer.write_all(&buf[..n])?;
+            total_bytes += n as u64;
+            // \r keeps this to one animated line rather than flooding
+            // scrollback; logging goes to stderr (see main.rs's
+            // `StderrLogger`) so this stdout line never interleaves with it.
+            // Explicit flush because stdout is line-buffered and this line
+            // never ends in '\n'.
+            print!("\r[mesh_sync] Pulling from {peer_ip}: {:.1} MB", total_bytes as f64 / 1_000_000.0);
+            let _ = stdout.flush();
+        }
+        println!();
         file_writer.flush()?;
         file_writer.get_ref().sync_all()?;
         drop(file_writer);

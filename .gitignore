@@ -2,3 +2,5 @@ target/
 .idea
 .env
 *.db*
+build_system
+dist

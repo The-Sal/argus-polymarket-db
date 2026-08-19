@@ -253,6 +253,20 @@ impl P2pDbServer {
             return;
         };
 
+        // On macOS/BSD, a socket returned by `accept()` can inherit the
+        // listening socket's non-blocking flag rather than starting fresh in
+        // blocking mode — since `listener` above was set non-blocking to
+        // support the polling accept loop, `stream` can come out
+        // non-blocking too. If left that way, the write timeout below sets
+        // SO_SNDTIMEO but O_NONBLOCK still takes precedence, so a full send
+        // buffer surfaces immediately as EWOULDBLOCK ("Resource temporarily
+        // unavailable") instead of blocking up to the timeout. Force it back
+        // to blocking mode so the timeouts actually govern the transfer.
+        if let Err(e) = stream.set_nonblocking(false) {
+            log::warn!("[p2p_db_server] Failed to clear non-blocking mode on raw transfer stream to {requester_ip}: {e}");
+            return;
+        }
+
         let _ = stream.set_read_timeout(Some(Duration::from_secs(PULL_TIMEOUT_SECS)));
         let _ = stream.set_write_timeout(Some(Duration::from_secs(PULL_TIMEOUT_SECS)));
 

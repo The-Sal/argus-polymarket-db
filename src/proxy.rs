@@ -45,7 +45,7 @@ fn find_proxy_addr(proxy_addrs: Vec<String>) -> String{
             if let Ok(mut response) = response {
                 let string_body = response.body_mut().read_to_string().unwrap();
                 println!("{}: {}", addr, string_body);
-                tx.send(addr).unwrap();
+                _ = tx.send(addr);
                 return
             } else {
                 return
@@ -72,6 +72,7 @@ pub(crate) fn get_proxy_agent() -> Agent{
             "null" => {proxy = None;},
             _ => {proxy = Some(Proxy::new(&proxy_addr).unwrap());}
         }
+        log::info!("Using proxy: {:?}", proxy);
         let agent: Agent = Agent::config_builder()
             .proxy(proxy)
             .build()
