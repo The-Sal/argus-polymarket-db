@@ -68,6 +68,26 @@ Read from the real environment or a `.env` file in the working directory (via `d
 | `SOCKS5_ADDRS`                                     | *(empty)*                         | Comma-separated `socks5://host:port` proxy pool for outbound Polymarket requests.        |
 | `NULL_DISABLED`                                    | `false`                           | When truthy, disables the direct (no-proxy) path from the proxy race.                    |
 
+> **Quirk:** `.env` is resolved relative to the process's **current working
+> directory at launch**, not to the binary's location or to `APDB_DB_PATH`'s
+> directory. Running the exact same binary from two different directories —
+> each with its own `.env` (or no `.env` at all) — can silently pick up
+> different config and therefore behave differently, even though
+> `APDB_DB_PATH` itself points at the same database file both times. This is
+> easy to hit with the `~/.argus/sidecars/APDB` binary specifically, since
+> it's meant to be launched from anywhere: launching it from a shell sitting
+> in this repo picks up this repo's `.env`; launching it from `~/.argus`
+> picks up `~/.argus/.env` instead; launching it from anywhere else picks up
+> no `.env` file at all and falls back to whatever's already exported in
+> that shell. A variable missing from one of those `.env` files silently
+> reverts to its hardcoded default rather than erroring — see
+> [`docs/MESH_SYNC.md`](docs/MESH_SYNC.md#env-loading-is-cwd-relative) for a
+> concrete case where this changed whether a boot pulled from a tailnet peer
+> or ran a full local crawl. If you invoke the sidecar from multiple
+> directories, keep every `.env` it might load in sync, or export the
+> variables in your shell profile instead of relying on a per-directory
+> `.env`.
+
 See [`docs/API.md`](docs/API.md) for the full request/response protocol served over the socket, including an example using `socat`.
 
 If a working `tailscale` CLI is available, APDB also binds two fixed

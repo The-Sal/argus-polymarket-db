@@ -41,6 +41,35 @@ always served as-is; pulling 1-2GB over the network to replace something
 already fresh would be pure waste. See
 [`docs/db_specs/v1.md`](db_specs/v1.md) for how that TTL is computed.
 
+#### Env loading is cwd-relative
+
+`refresh_interval_secs` — the same value used both as the local snapshot's
+staleness check and as the mesh sync TTL above — comes from
+`POLYMARKET_FULL_MARKET_CACHE_REFRESH_INTERVAL`, which `main.rs` reads after
+`dotenvy::from_filename(".env")`. That call resolves `.env` relative to the
+**current working directory the process was launched from**, not to the
+binary's location. For a sidecar binary meant to be launched from anywhere
+(e.g. `~/.argus/sidecars/APDB`), this means the exact same boot can go two
+different ways depending purely on which directory you happened to be `cd`'d
+into:
+
+- Launched from a directory whose `.env` sets
+  `POLYMARKET_FULL_MARKET_CACHE_REFRESH_INTERVAL=6000` → a peer whose
+  database was built 5600s ago is within TTL → mesh sync pulls it.
+- Launched from a directory whose `.env` exists but doesn't set that
+  variable at all (e.g. it only sets `SOCKS5_ADDRS`) → the value silently
+  falls back to the hardcoded default (300s) → that same peer is now
+  considered stale → `try_bootstrap_from_peers` returns `None` → a full
+  local crawl runs instead, even though a perfectly good peer database was
+  sitting one tailnet hop away.
+
+Nothing here is a bug in the discovery/TTL logic itself — it's operating
+correctly on whatever `refresh_interval_secs` it was handed. The footgun is
+purely that two `.env` files with different variables present produce two
+different effective configs for what looks like "the same command." See the
+Configuration section of the top-level [`README.md`](../README.md) for the
+general version of this caveat.
+
 ```
 local db missing or stale
         │
