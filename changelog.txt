@@ -134,3 +134,33 @@ Changes:
     * main (function)
 
 ====================================================================================================
+Version 2.0.0
+Added:
+    + try_bootstrap_from_peers (function)
+    + query_peer_db_info (function)
+    + pull_from_peer (function)
+    + db_info_json (function)
+    + P2pDbServer (struct)
+    + P2pDbServer::new (method)
+    + P2pDbServer::run_server (method)
+    + P2pDbServer::handle_connection (method)
+    + P2pDbServer::handle_request_pull (method)
+    + write_response (function)
+    + write_json_line (function)
+    + stream_snapshot (function)
+Changes:
+    * TailnetFns (struct)
+    * TailnetFns::tailscale_available (method)
+    * TailnetFns::get_my_address (method)
+    * TailnetFns::tailscale_status (method)
+    * TailnetFns::get_peers (method)
+    * now_unix (function)
+    * Snapshot (struct)
+    * Snapshot::from_file (method)
+    * main (function)
+    * tmp_path_for (function)
+    * full_crawl_and_compact (function)
+    * spawn_refresh_loop (function)
+    * handle_db_info (function)
+
+====================================================================================================
