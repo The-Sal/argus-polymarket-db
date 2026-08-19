@@ -2,8 +2,8 @@ use std::fs::File;
 use crate::utils::now_unix;
 use std::sync::{Arc, RwLock};
 use std::os::unix::fs::FileExt;
+use std::time::{Instant, UNIX_EPOCH};
 use std::io::{self, BufRead, BufReader};
-use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
 /// On-disk format version, written as `format_version` in the line-0 meta
 /// record by `full_crawl_and_compact` and bumped whenever the file layout or

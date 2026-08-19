@@ -3,9 +3,9 @@ use std::sync::Arc;
 use crate::poly_api;
 use crate::utils::now_unix;
 use std::path::{Path, PathBuf};
+use std::time::{Duration, Instant};
 use crate::poly_api::OpenEventsIter;
 use std::io::{self, BufWriter, Write};
-use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use crate::database::{dedupe_keep_last, Database, IndexEntry, Snapshot, DB_FORMAT_VERSION};
 
 /// Minimum gap between "still crawling" progress log lines during Phase 1.
