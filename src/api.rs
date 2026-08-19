@@ -292,22 +292,25 @@ fn handle_prefix_search(db: &Database, id: Value, data: Value) -> Value {
     )
 }
 
-fn handle_db_info(db: &Database, id: Value) -> Value {
+/// Shared by the Unix-socket `db_info` op below and the tailnet-facing
+/// `db_info` op in `p2p_db_server.rs`, so the two wire shapes can never
+/// drift apart.
+pub(crate) fn db_info_json(db: &Database) -> Value {
     let snap = db.snapshot();
     let (major, minor, patch) = version::version_tuple();
-    ok_response(
-        id,
-        "db_info",
-        serde_json::json!({
-            "major": major,
-            "minor": minor,
-            "patch": patch,
-            "version": version::version_string(),
-            "lines": snap.lines,
-            "built_at_unix": snap.built_at_unix,
-            "db_format_version": snap.format_version,
-        }),
-    )
+    serde_json::json!({
+        "major": major,
+        "minor": minor,
+        "patch": patch,
+        "version": version::version_string(),
+        "lines": snap.lines,
+        "built_at_unix": snap.built_at_unix,
+        "db_format_version": snap.format_version,
+    })
+}
+
+fn handle_db_info(db: &Database, id: Value) -> Value {
+    ok_response(id, "db_info", db_info_json(db))
 }
 
 #[cfg(test)]

@@ -14,9 +14,10 @@ The Polymarket dispatcher used to be Argus's largest component by memory footpri
 - **Indexes that log in memory** as a ticker-sorted array of `(ticker, byte offset, length)` — lookups are a binary search plus a positioned `pread`, not a line scan.
 - **Serves queries over a Unix domain socket** (`APDB_BIND_ADDRESS`) using a line-delimited JSON request/response protocol: `get_event`, `list_events`, `list_tickers`, `list_asset_ids`, `prefix_search`, and `db_info`. Full wire protocol in [`docs/API.md`](docs/API.md).
 - **Refreshes itself in the background** on a timer (`POLYMARKET_FULL_MARKET_CACHE_REFRESH_INTERVAL`), re-crawling Gamma, compacting the log, and atomically swapping in the new snapshot without dropping in-flight readers. Tickers Gamma stops returning are carried forward rather than evicted, until their `endDate` has been past for more than a 4-hour grace period.
+- **Syncs from a tailnet peer instead of crawling, when it can.** On boot, if the local database is missing or past its TTL, APDB asks every reachable Tailscale peer how old its own database is (over a dedicated control port) and, if any peer's data is fresh enough, pulls it directly (gzip-compressed, over a second dedicated port) instead of doing a full Gamma crawl. Falls straight through to a normal crawl if no tailnet, no peers, or no fresh-enough peer is found. Full protocol in [`docs/MESH_SYNC.md`](docs/MESH_SYNC.md).
 - **Routes outbound Polymarket requests through an optional SOCKS5 proxy pool** (`SOCKS5_ADDRS`), racing candidates and using whichever answers first (or no proxy, if `NULL_DISABLED` isn't set and the direct/"null" path wins the race).
 
-Not yet true: the roadmap items below (mesh sync, auto-discovered proxies, verified Linux/ARM builds) are still in progress or unwired.
+Not yet true: auto-discovered proxies and verified Linux/ARM production use (see [Roadmap](#roadmap)) are still in progress.
 
 ## Roadmap
 
@@ -37,7 +38,7 @@ The long-term goal is for APDB to be a fully portable, self-coordinating service
 
 - **A real service boundary.** Done — Argus (or anything else) talks to APDB over the Unix socket described in [`docs/API.md`](docs/API.md) instead of running it interactively.
 - **A real on-disk index.** Done for lookup — the sorted in-memory index plus positioned reads means a query doesn't get slower as the file grows. Crash recovery is still limited to "drop the torn final line and reload"; there's no write-ahead log or corruption repair.
-- **MeshData (tailnet sync).** Multiple APDB-backed Argus instances typically run at once — prod, dev boxes, etc. — some reachable directly, some only through a proxy. MeshData would let those instances share cached data over a Tailscale mesh instead of each one hitting Gamma independently, and, further out, route a request to whichever mesh node can answer it fastest when several cache entries expire at once. Early scaffolding lives in `src/tailnet_fns.rs` — it can shell out to `tailscale status --json` and enumerate mesh peers — but it isn't wired into `main.rs` yet and doesn't sync anything.
+- **MeshData (tailnet sync).** Done for the boot-time case — a fresh or stale instance queries every reachable Tailscale peer and pulls a fresh-enough database directly instead of re-crawling Gamma; see [`docs/MESH_SYNC.md`](docs/MESH_SYNC.md). Not yet done: routing a *live* query to whichever mesh node can answer it fastest — today mesh sync only runs once, at boot.
 
 ## Running it
 
@@ -68,6 +69,13 @@ Read from the real environment or a `.env` file in the working directory (via `d
 | `NULL_DISABLED`                                    | `false`                           | When truthy, disables the direct (no-proxy) path from the proxy race.                    |
 
 See [`docs/API.md`](docs/API.md) for the full request/response protocol served over the socket, including an example using `socat`.
+
+If a working `tailscale` CLI is available, APDB also binds two fixed
+Tailscale-interface ports — `9563` (control) and `9564` (raw transfer) — for
+mesh sync (see above). Neither is configurable via env var, and neither is
+required: without a working `tailscale`, mesh sync is skipped and APDB
+behaves exactly as it did before this feature existed. Full protocol in
+[`docs/MESH_SYNC.md`](docs/MESH_SYNC.md).
 
 ## Compatibility
 APDB is fully compatible with Argus 1.1.0 and later. Track the [Argus PR](https://github.com/The-Sal/Argus/pull/94) which introduces APDB to the codebase.

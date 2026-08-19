@@ -7,13 +7,14 @@ mod database;
 mod poly_api;
 mod tailnet_fns;
 mod p2p_db_server;
-
+mod mesh_sync;
 use std::fs::File;
 use std::sync::Arc;
 use std::path::PathBuf;
 use shellexpand::tilde;
 use database::{Database, Snapshot};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
 
 const DEFAULT_DB_PATH: &str = "~/.argus/polymarket_events.db";
 const DEFAULT_BIND_ADDRESS: &str = "/tmp/argus_polymarket_db.sock";
@@ -128,20 +129,35 @@ fn main() {
             (loaded, Duration::from_secs(refresh_interval_secs - age_secs))
         } else {
             log::info!(
-                "Database built {} ago exceeds the {} TTL; refreshing before serving...",
+                "Database built {} ago exceeds the {} TTL; checking tailnet peers before crawling...",
                 format_duration(age_secs),
                 format_duration(refresh_interval_secs)
             );
-            let fresh = refresh::full_crawl_and_compact(&db_path, Some(loaded)).expect("startup refresh failed");
-            (fresh, Duration::from_secs(refresh_interval_secs))
+            // Mesh sync is a pure optimization: only attempted because the
+            // local snapshot is already known to be stale, and any failure
+            // falls straight through to the exact same crawl this branch
+            // has always done.
+            if let Some(pulled) = mesh_sync::try_bootstrap_from_peers(&db_path, refresh_interval_secs) {
+                let age = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs().saturating_sub(pulled.built_at_unix);
+                (pulled, Duration::from_secs(refresh_interval_secs.saturating_sub(age)))
+            } else {
+                let fresh = refresh::full_crawl_and_compact(&db_path, Some(loaded)).expect("startup refresh failed");
+                (fresh, Duration::from_secs(refresh_interval_secs))
+            }
         }
     } else {
         log::info!(
-            "No existing database found at {}; running initial crawl (this can take a while)...",
+            "No existing database found at {}; checking tailnet peers before running initial crawl...",
             db_path.display()
         );
-        let snap = refresh::full_crawl_and_compact(&db_path, None).expect("initial crawl failed");
-        (snap, Duration::from_secs(refresh_interval_secs))
+        if let Some(pulled) = mesh_sync::try_bootstrap_from_peers(&db_path, refresh_interval_secs) {
+            let age = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs().saturating_sub(pulled.built_at_unix);
+            (pulled, Duration::from_secs(refresh_interval_secs.saturating_sub(age)))
+        } else {
+            log::info!("No usable peer found; running initial crawl (this can take a while)...");
+            let snap = refresh::full_crawl_and_compact(&db_path, None).expect("initial crawl failed");
+            (snap, Duration::from_secs(refresh_interval_secs))
+        }
     };
 
     log::info!(
@@ -166,6 +182,15 @@ fn main() {
 
     let listener = server::bind(&bind_address).expect("failed to bind Unix domain socket listener");
     log::info!("Listening on {}", bind_address.display());
+
+    match p2p_db_server::P2pDbServer::new(Arc::clone(&db)) {
+        Some(p2p_db_server) => {
+            let p2p_db_server = Arc::new(p2p_db_server);
+            log::info!("P2P DB Server listening on {}", p2p_db_server.port);
+            std::thread::spawn(move || p2p_db_server.run_server());
+        }
+        None => log::warn!("P2P DB Server disabled (see preceding warning)"),
+    }
 
     server::run(listener, db);
 }

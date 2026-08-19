@@ -39,7 +39,10 @@ fn now_unix() -> u64 {
         .as_secs()
 }
 
-fn tmp_path_for(path: &Path) -> PathBuf {
+/// Shared with `mesh_sync.rs` so a network-pulled database and a locally
+/// crawled one land in the same `.tmp` staging location before either is
+/// renamed into place.
+pub(crate) fn tmp_path_for(path: &Path) -> PathBuf {
     let mut s = path.as_os_str().to_owned();
     s.push(".tmp");
     PathBuf::from(s)
