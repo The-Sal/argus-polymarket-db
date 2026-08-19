@@ -164,3 +164,17 @@ Changes:
     * handle_db_info (function)
 
 ====================================================================================================
+Version 2.0.1
+Changes:
+    * find_proxy_addr (function)
+    * get_proxy_agent (function)
+    * now_unix (function)
+    * pull_from_peer (function)
+    * P2pDbServer::handle_request_pull (method)
+
+====================================================================================================
+Version 2.0.2
+Changes:
+    * now_unix (function)
+
+====================================================================================================
