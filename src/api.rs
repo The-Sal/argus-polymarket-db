@@ -305,6 +305,7 @@ fn handle_db_info(db: &Database, id: Value) -> Value {
             "version": version::version_string(),
             "lines": snap.lines,
             "built_at_unix": snap.built_at_unix,
+            "db_format_version": snap.format_version,
         }),
     )
 }

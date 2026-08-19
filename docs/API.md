@@ -40,7 +40,7 @@ real environment):
 | ----------------------------- | --------------------------------- | ---------------------------------------------------------- |
 | `APDB_DB_PATH`                | `polymarket_events.db`            | Path to the on-disk NDJSON event log backing the database. |
 | `APDB_BIND_ADDRESS`           | `/tmp/argus_polymarket_db.sock`   | Unix domain socket path the server listens on.             |
-| `POLYMARKET_FULL_MARKET_CACHE_REFRESH_INTERVAL` | `300`             | How often the background refresh loop re-crawls Polymarket. Named to stay in sync with the core [Argus](https://github.com/the-sal/argus) project. |
+| `POLYMARKET_FULL_MARKET_CACHE_REFRESH_INTERVAL` | `300`             | Both the background refresh cadence *and* a TTL on the on-disk snapshot's `built_at_unix` at boot: a snapshot older than this is refreshed synchronously before the server starts serving, instead of being served stale. See `docs/db_specs/v1.md`. Named to stay in sync with the core [Argus](https://github.com/the-sal/argus) project. |
 | `SOCKS5_ADDRS`                | *(empty)*                         | Comma-separated `socks5://host:port` proxy pool used for outbound Polymarket requests. |
 | `NULL_DISABLED`               | `false`                           | When truthy, disables routing through the null/no-op proxy path. |
 
@@ -215,7 +215,8 @@ Metadata about the currently loaded database snapshot. No params.
 | `patch`         | integer | APDB patch version. |
 | `version`       | string  | `"major.minor.patch"`, same as top-level `db_version`. |
 | `lines`         | integer | Number of events currently indexed. |
-| `built_at_unix` | integer | Unix timestamp the loaded snapshot was built (crawl completion time, or the on-disk file's mtime if loaded from an existing file at startup). |
+| `built_at_unix` | integer | Unix timestamp the loaded snapshot was built. Read from the on-disk file's line-0 meta record (see `docs/db_specs/v1.md`); falls back to the file's mtime only for a pre-meta-line (`db_format_version: 0`, see `docs/db_specs/v0.md`) file. |
+| `db_format_version` | integer | On-disk database format version (see `docs/db_specs/`). `0` = legacy (no meta line), `1` = current. Unrelated to `major`/`minor`/`patch`, which version the APDB *binary*. |
 
 ## Data model notes
 

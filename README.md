@@ -37,7 +37,7 @@ The long-term goal is for APDB to be a fully portable, self-coordinating service
 
 - **A real service boundary.** Done — Argus (or anything else) talks to APDB over the Unix socket described in [`docs/API.md`](docs/API.md) instead of running it interactively.
 - **A real on-disk index.** Done for lookup — the sorted in-memory index plus positioned reads means a query doesn't get slower as the file grows. Crash recovery is still limited to "drop the torn final line and reload"; there's no write-ahead log or corruption repair.
-- **MeshData (tailnet sync).** Multiple APDB-backed Argus instances typically run at once — prod, dev boxes, etc. — some reachable directly, some only through a proxy. MeshData would let those instances share cached data over a Tailscale mesh instead of each one hitting Gamma independently, and, further out, route a request to whichever mesh node can answer it fastest when several cache entries expire at once. Early scaffolding lives in `src/tailnet_sync.rs` — it can shell out to `tailscale status --json` and enumerate mesh peers — but it isn't wired into `main.rs` yet and doesn't sync anything.
+- **MeshData (tailnet sync).** Multiple APDB-backed Argus instances typically run at once — prod, dev boxes, etc. — some reachable directly, some only through a proxy. MeshData would let those instances share cached data over a Tailscale mesh instead of each one hitting Gamma independently, and, further out, route a request to whichever mesh node can answer it fastest when several cache entries expire at once. Early scaffolding lives in `src/tailnet_fns.rs` — it can shell out to `tailscale status --json` and enumerate mesh peers — but it isn't wired into `main.rs` yet and doesn't sync anything.
 
 ## Running it
 

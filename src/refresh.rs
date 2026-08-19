@@ -5,7 +5,7 @@ use std::path::{Path, PathBuf};
 use crate::poly_api::OpenEventsIter;
 use std::io::{self, BufWriter, Write};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use crate::database::{dedupe_keep_last, Database, IndexEntry, Snapshot};
+use crate::database::{dedupe_keep_last, Database, IndexEntry, Snapshot, DB_FORMAT_VERSION};
 
 /// Minimum gap between "still crawling" progress log lines during Phase 1.
 /// A full crawl is ~170 requests to Gamma; logging every page would flood
@@ -63,8 +63,23 @@ pub(crate) fn full_crawl_and_compact(path: &Path, old: Option<Arc<Snapshot>>) ->
     let tmp_path = tmp_path_for(path);
     let mut entries: Vec<IndexEntry> = Vec::new();
     let mut offset: u64 = 0;
+    let built_at_unix = now_unix();
 
     let mut writer = BufWriter::new(File::create(&tmp_path)?);
+
+    // Line 0 is a metadata record, not a ticker — `built_at_unix` here is
+    // the source of truth for "how old is this data", read back by
+    // `Snapshot::from_file`. Embedding it in the file (rather than relying
+    // on the file's mtime) means the TTL survives copies, rsync, and backups
+    // that preserve content but not mtime.
+    let meta_line = serde_json::to_string(&serde_json::json!({
+        "__apdb_meta__": true,
+        "format_version": DB_FORMAT_VERSION,
+        "built_at_unix": built_at_unix,
+    }))?;
+    writer.write_all(meta_line.as_bytes())?;
+    writer.write_all(b"\n")?;
+    offset += meta_line.len() as u64 + 1;
 
     // Phase 1: stream the crawl page by page, writing straight to disk.
     // Never holds more than one page's worth of deserialized events at a
@@ -156,7 +171,8 @@ pub(crate) fn full_crawl_and_compact(path: &Path, old: Option<Arc<Snapshot>>) ->
         index: entries,
         file,
         lines,
-        built_at_unix: now_unix(),
+        built_at_unix,
+        format_version: DB_FORMAT_VERSION,
     }))
 }
 
@@ -233,17 +249,31 @@ fn merge_carry_forward<W: Write>(
     Ok((carried_count, pruned))
 }
 
-/// Runs `full_crawl_and_compact` forever on `interval`, swapping the result
-/// into `db` on success. A failed cycle (e.g. Gamma unreachable) is logged
-/// and leaves the previous snapshot serving traffic untouched — a refresh
-/// is never partially applied.
-pub(crate) fn spawn_refresh_loop(db: Arc<Database>, path: PathBuf, interval: Duration) -> std::thread::JoinHandle<()> {
-    std::thread::spawn(move || loop {
-        std::thread::sleep(interval);
-        let old = db.snapshot();
-        match full_crawl_and_compact(&path, Some(old)) {
-            Ok(new_snapshot) => db.swap(new_snapshot),
-            Err(e) => log::error!("[refresh] Refresh failed, keeping previous snapshot: {e}"),
+/// Runs `full_crawl_and_compact` forever, swapping the result into `db` on
+/// success. A failed cycle (e.g. Gamma unreachable) is logged and leaves the
+/// previous snapshot serving traffic untouched — a refresh is never
+/// partially applied.
+///
+/// The first cycle waits `initial_delay` rather than `interval` — callers
+/// derive this from the on-disk snapshot's age at boot (`interval - age`) so
+/// the refresh cadence behaves as a TTL measured from when the data was last
+/// actually written, not from process start. Every cycle after the first
+/// waits the full `interval`.
+pub(crate) fn spawn_refresh_loop(
+    db: Arc<Database>,
+    path: PathBuf,
+    initial_delay: Duration,
+    interval: Duration,
+) -> std::thread::JoinHandle<()> {
+    std::thread::spawn(move || {
+        std::thread::sleep(initial_delay);
+        loop {
+            let old = db.snapshot();
+            match full_crawl_and_compact(&path, Some(old)) {
+                Ok(new_snapshot) => db.swap(new_snapshot),
+                Err(e) => log::error!("[refresh] Refresh failed, keeping previous snapshot: {e}"),
+            }
+            std::thread::sleep(interval);
         }
     })
 }

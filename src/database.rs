@@ -4,6 +4,13 @@ use std::os::unix::fs::FileExt;
 use std::io::{self, BufRead, BufReader};
 use std::time::{Instant, SystemTime, UNIX_EPOCH};
 
+/// On-disk format version, written as `format_version` in the line-0 meta
+/// record by `full_crawl_and_compact` and bumped whenever the file layout or
+/// meta line's meaning changes. `0` denotes the pre-meta-line legacy format
+/// (no line-0 record at all — see `docs/db_specs/v0.md`). See
+/// `docs/db_specs/v1.md` for what `1` (the current format) adds.
+pub(crate) const DB_FORMAT_VERSION: u32 = 1;
+
 /// One ticker's location in the on-disk log: byte offset of its JSON payload
 /// and the payload's length (excluding the trailing `\n`), enough to read it
 /// back with a single positioned `pread` (`FileExt::read_exact_at`) instead
@@ -28,6 +35,7 @@ pub(crate) struct Snapshot {
     pub(crate) file: File,
     pub(crate) lines: u32,
     pub(crate) built_at_unix: u64,
+    pub(crate) format_version: u32,
 }
 
 fn now_unix() -> u64 {
@@ -65,18 +73,25 @@ impl Snapshot {
     pub(crate) fn from_file(file: File) -> io::Result<Snapshot> {
         let start = Instant::now();
         // `built_at_unix` is reported to clients via `db_info` as "when this
-        // data was built". For a freshly completed crawl that's `now()`
-        // (set in `full_crawl_and_compact`), but for data loaded from an
-        // existing file on startup it must be the file's mtime — otherwise
-        // restarting the process on a three-day-old database would report
-        // it as freshly built.
-        let built_at_unix = file
+        // data was built", and is also what a TTL-based refresh check
+        // compares against — so it must reflect when the *data* was built,
+        // not when the file happened to last touch disk (mtime survives
+        // copies, rsync, backups, and `touch` without meaning any of those
+        // things rebuilt the data). The authoritative value lives in the
+        // meta line (offset 0, `__apdb_meta__: true`) written by
+        // `full_crawl_and_compact`. Files predating that meta line, or with
+        // an unparseable one, fall back to mtime (then `now()`) so old
+        // on-disk databases still load.
+        let mut built_at_unix = file
             .metadata()
             .and_then(|m| m.modified())
             .ok()
             .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
             .map(|d| d.as_secs())
             .unwrap_or_else(now_unix);
+        // `0` = pre-meta-line legacy format (docs/db_specs/v0.md); overwritten
+        // below if a line-0 meta record is found.
+        let mut format_version: u32 = 0;
         let mut entries: Vec<IndexEntry> = Vec::new();
         let mut reader = BufReader::new(file.try_clone()?);
         let mut offset: u64 = 0;
@@ -99,28 +114,39 @@ impl Snapshot {
             }
             let content = line.trim_end_matches('\n');
             let content_len = content.len() as u32;
+            let line_offset = offset;
+            offset += bytes_read as u64;
 
             match serde_json::from_str::<serde_json::Value>(content) {
                 Ok(value) => {
+                    if line_offset == 0 && value.get("__apdb_meta__").and_then(|v| v.as_bool()) == Some(true) {
+                        if let Some(ts) = value.get("built_at_unix").and_then(|v| v.as_u64()) {
+                            built_at_unix = ts;
+                        }
+                        format_version = value
+                            .get("format_version")
+                            .and_then(|v| v.as_u64())
+                            .map(|v| v as u32)
+                            .unwrap_or(1);
+                        continue;
+                    }
                     let ticker = value.get("ticker").and_then(|t| t.as_str()).unwrap_or("").trim();
                     if ticker.is_empty() {
-                        log::warn!("[database] Skipping record with empty/missing ticker at offset {offset}");
+                        log::warn!("[database] Skipping record with empty/missing ticker at offset {line_offset}");
                         skipped += 1;
                     } else {
                         entries.push(IndexEntry {
                             ticker: ticker.to_string(),
-                            offset,
+                            offset: line_offset,
                             len: content_len,
                         });
                     }
                 }
                 Err(e) => {
-                    log::warn!("[database] Skipping unparseable record at offset {offset}: {e}");
+                    log::warn!("[database] Skipping unparseable record at offset {line_offset}: {e}");
                     skipped += 1;
                 }
             }
-
-            offset += bytes_read as u64;
         }
 
         let raw_count = entries.len() as u32;
@@ -130,7 +156,7 @@ impl Snapshot {
         let duplicates = raw_count - lines;
 
         log::info!(
-            "[database] Loaded {lines} events in {:.2}s ({duplicates} duplicate tickers collapsed, {skipped} bad records skipped)",
+            "[database] Loaded {lines} events in {:.2}s (format_version={format_version}, {duplicates} duplicate tickers collapsed, {skipped} bad records skipped)",
             start.elapsed().as_secs_f64()
         );
 
@@ -139,6 +165,7 @@ impl Snapshot {
             file,
             lines,
             built_at_unix,
+            format_version,
         })
     }
 
@@ -252,6 +279,41 @@ mod tests {
 
     fn event(ticker: &str) -> serde_json::Value {
         serde_json::json!({ "ticker": ticker, "endDate": null })
+    }
+
+    #[test]
+    fn legacy_file_without_meta_line_has_format_version_zero() {
+        let (_guard, file) = write_scratch_db(&[("only", event("only"))]);
+        let snap = Snapshot::from_file(file).unwrap();
+        assert_eq!(snap.format_version, 0);
+        assert_eq!(snap.lines, 1);
+        assert!(snap.find("only").is_some());
+    }
+
+    #[test]
+    fn meta_line_supplies_built_at_and_format_version_and_is_not_indexed() {
+        let mut path = std::env::temp_dir();
+        path.push(format!("apdb_test_meta_{}_{}.db", std::process::id(), now_unix_nanos()));
+        let mut f = File::create(&path).unwrap();
+        let meta = serde_json::json!({
+            "__apdb_meta__": true,
+            "format_version": DB_FORMAT_VERSION,
+            "built_at_unix": 12345u64,
+        });
+        f.write_all(serde_json::to_string(&meta).unwrap().as_bytes()).unwrap();
+        f.write_all(b"\n").unwrap();
+        f.write_all(serde_json::to_string(&event("only")).unwrap().as_bytes()).unwrap();
+        f.write_all(b"\n").unwrap();
+        f.flush().unwrap();
+        let _guard = ScratchFile(path.clone());
+        let file = File::open(&path).unwrap();
+
+        let snap = Snapshot::from_file(file).unwrap();
+        assert_eq!(snap.built_at_unix, 12345);
+        assert_eq!(snap.format_version, DB_FORMAT_VERSION);
+        assert_eq!(snap.lines, 1, "meta line must not be counted as a ticker record");
+        assert!(snap.find("only").is_some());
+        assert!(snap.find("__apdb_meta__").is_none());
     }
 
     #[test]

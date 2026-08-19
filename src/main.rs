@@ -5,7 +5,8 @@ mod refresh;
 mod version;
 mod database;
 mod poly_api;
-mod tailnet_sync;
+mod tailnet_fns;
+mod p2p_db_server;
 
 use std::fs::File;
 use std::sync::Arc;
@@ -96,30 +97,51 @@ fn main() {
         .parse()
         .unwrap_or(DEFAULT_REFRESH_INTERVAL_SECS);
 
-    let snapshot: Arc<Snapshot> = if db_path.exists() {
+    // The refresh interval doubles as a TTL on the on-disk snapshot: if it's
+    // older than `refresh_interval_secs`, it must not be served as-is, since
+    // that would mean serving arbitrarily stale data for a full interval
+    // after boot (e.g. kill the process, restart 10 days later with a 16h
+    // interval, and the loop below would otherwise wait another 16h before
+    // even looking). Instead a stale snapshot is refreshed synchronously
+    // before the server starts accepting traffic.
+    //
+    // Age is measured from `Snapshot::built_at_unix`, which comes from the
+    // meta line `full_crawl_and_compact` writes at offset 0 of the db file
+    // — not the file's mtime, which a copy/rsync/backup/restore can change
+    // without the data actually being any fresher (see `database.rs`).
+    let (snapshot, initial_refresh_delay): (Arc<Snapshot>, Duration) = if db_path.exists() {
         let file = File::open(&db_path).expect("failed to open existing database file");
-        if let Ok(meta) = file.metadata() {
-            let age_secs = meta
-                .modified()
-                .ok()
-                .and_then(|m| SystemTime::now().duration_since(m).ok())
-                .map(|d| d.as_secs());
-            let age_str = age_secs.map(format_duration).unwrap_or_else(|| "unknown".to_string());
+        log::info!("Loading existing database from {}...", db_path.display());
+        let loaded = Arc::new(Snapshot::from_file(file).expect("failed to load existing database file"));
+        let age_secs = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            .saturating_sub(loaded.built_at_unix);
+
+        if age_secs < refresh_interval_secs {
             log::info!(
-                "Loading existing database from {} ({:.1}MB, last written {age_str} ago)...",
-                db_path.display(),
-                meta.len() as f64 / 1024.0 / 1024.0
+                "Database built {} ago, within the {} TTL; serving as-is",
+                format_duration(age_secs),
+                format_duration(refresh_interval_secs)
             );
+            (loaded, Duration::from_secs(refresh_interval_secs - age_secs))
         } else {
-            log::info!("Loading existing database from {}...", db_path.display());
+            log::info!(
+                "Database built {} ago exceeds the {} TTL; refreshing before serving...",
+                format_duration(age_secs),
+                format_duration(refresh_interval_secs)
+            );
+            let fresh = refresh::full_crawl_and_compact(&db_path, Some(loaded)).expect("startup refresh failed");
+            (fresh, Duration::from_secs(refresh_interval_secs))
         }
-        Arc::new(Snapshot::from_file(file).expect("failed to load existing database file"))
     } else {
         log::info!(
             "No existing database found at {}; running initial crawl (this can take a while)...",
             db_path.display()
         );
-        refresh::full_crawl_and_compact(&db_path, None).expect("initial crawl failed")
+        let snap = refresh::full_crawl_and_compact(&db_path, None).expect("initial crawl failed");
+        (snap, Duration::from_secs(refresh_interval_secs))
     };
 
     log::info!(
@@ -131,10 +153,14 @@ fn main() {
 
     let db = Arc::new(Database::new(snapshot));
 
-    log::info!("Background refresh will run every {refresh_interval_secs}s");
+    log::info!(
+        "Background refresh will run every {refresh_interval_secs}s (next in {})",
+        format_duration(initial_refresh_delay.as_secs())
+    );
     refresh::spawn_refresh_loop(
         Arc::clone(&db),
         db_path.clone(),
+        initial_refresh_delay,
         Duration::from_secs(refresh_interval_secs),
     );
 

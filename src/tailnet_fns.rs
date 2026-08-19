@@ -17,10 +17,10 @@ Raw databases can range ~1-2GB on disk, during transmission they are automatical
 use serde_json::Value;
 use std::process::Command;
 
-struct TailnetFns {}
+pub(crate) struct TailnetFns {}
 
 impl TailnetFns {
-    fn tailscale_available() -> bool{
+    pub(crate) fn tailscale_available() -> bool{
         let cmd = Command::new("tailscale").arg("status").output();
         if cmd.is_err() {
             return false;
@@ -28,7 +28,7 @@ impl TailnetFns {
         true
     }
 
-    fn get_my_address() -> Option<String>{
+    pub(crate) fn get_my_address() -> Option<String>{
         let cmd = Command::new("tailscale").arg("ip").arg("-4").output();
         if cmd.is_ok() {
             let output = cmd.unwrap();
@@ -38,7 +38,7 @@ impl TailnetFns {
         None
     }
 
-    fn tailscale_status() -> Option<serde_json::Value>{
+    pub(crate) fn tailscale_status() -> Option<serde_json::Value>{
         let cmd = Command::new("tailscale").arg("status").arg("--json").output();
         if cmd.is_err() {
             return None;
@@ -49,7 +49,7 @@ impl TailnetFns {
         Some(output_json)
     }
 
-    fn get_peers() -> Result<Vec<String>, ()>{
+    pub(crate) fn get_peers() -> Result<Vec<String>, ()>{
         let status = TailnetFns::tailscale_status();
         if status.is_none() {
             return Err(());
@@ -81,12 +81,12 @@ impl TailnetFns {
 mod tests {
     use super::*;
     #[test]
-    fn test_tailscale_available(){
+    pub(crate) fn test_tailscale_available(){
         assert!(TailnetFns::tailscale_available());
         println!("Tailscale is available");
     }
     #[test]
-    fn test_get_my_address(){
+    pub(crate) fn test_get_my_address(){
         let my_address = TailnetFns::get_my_address();
         if my_address.is_some() {
             println!("My address is {}", my_address.unwrap());
@@ -95,13 +95,13 @@ mod tests {
         }
     }
     #[test]
-    fn test_tailscale_status(){
+    pub(crate) fn test_tailscale_status(){
         let status = TailnetFns::tailscale_status();
         assert!(status.is_some());
         println!("Tailscale status: {}", status.unwrap());
     }
     #[test]
-    fn test_get_peers(){
+    pub(crate) fn test_get_peers(){
         let peers = TailnetFns::get_peers();
         match peers {
             Ok(peers_vec) => {
