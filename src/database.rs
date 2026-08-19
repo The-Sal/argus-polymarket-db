@@ -243,6 +243,7 @@ impl Database {
 mod tests {
     use super::*;
     use std::io::Write;
+    use std::time::SystemTime;
 
     struct ScratchFile(std::path::PathBuf);
     impl Drop for ScratchFile {

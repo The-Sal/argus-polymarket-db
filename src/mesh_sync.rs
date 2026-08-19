@@ -214,6 +214,7 @@ mod tests {
     use crate::p2p_db_server::P2pDbServer;
     use std::fs::File as StdFile;
     use std::path::PathBuf;
+    use std::time::{SystemTime, UNIX_EPOCH};
 
     struct ScratchFile(PathBuf);
     impl Drop for ScratchFile {

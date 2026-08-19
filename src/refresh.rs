@@ -278,6 +278,7 @@ pub(crate) fn spawn_refresh_loop(
 
 #[cfg(test)]
 mod tests {
+    use std::time::{SystemTime, UNIX_EPOCH};
     use super::*;
 
     struct ScratchFile(PathBuf);
