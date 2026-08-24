@@ -23,6 +23,26 @@ const PULL_TIMEOUT_SECS: u64 = 120;
 /// counter, matching `TRANSFER_CHUNK_BYTES` on the sending side.
 const PULL_PROGRESS_CHUNK_BYTES: usize = 256 * 1024;
 
+/// Thin `Read` wrapper that tallies bytes as they come off the wire,
+/// installed *underneath* `GzDecoder` so the count reflects actual
+/// on-the-wire (compressed) bytes rather than `GzDecoder::read`'s
+/// decompressed output — see the progress line in `pull_from_peer`, which
+/// previously reported only the latter and made it look like compression
+/// wasn't happening (the decompressed total naturally converges on the raw
+/// DB size no matter how well gzip did).
+struct CountingReader<R> {
+    inner: R,
+    count: u64,
+}
+
+impl<R: Read> Read for CountingReader<R> {
+    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
+        let n = self.inner.read(buf)?;
+        self.count += n as u64;
+        Ok(n)
+    }
+}
+
 
 /// Boot-time client/orchestrator role: asks every tailnet peer how old
 /// their database is, and if any of them is within `refresh_interval_secs`,
@@ -163,7 +183,13 @@ fn pull_from_peer(peer_ip: &str, db_path: &Path) -> io::Result<Arc<Snapshot>> {
 
     let tmp_path = tmp_path_for(db_path);
     let result = (|| -> io::Result<Arc<Snapshot>> {
-        let mut decoder = GzDecoder::new(BufReader::new(raw_stream));
+        // `CountingReader` sits *underneath* `GzDecoder` so its tally is of
+        // actual on-the-wire (compressed) bytes; `decoder.read()`'s own
+        // return value is decompressed output and would otherwise converge
+        // on the raw DB size regardless of compression, which is what made
+        // the old single-counter progress line look like nothing was being
+        // compressed.
+        let mut decoder = GzDecoder::new(BufReader::new(CountingReader { inner: raw_stream, count: 0 }));
         let mut file_writer = BufWriter::new(File::create(&tmp_path)?);
         // Hand-rolled in place of `io::copy` so each chunk's byte count is
         // visible for the progress counter below; behaves identically for
@@ -180,12 +206,17 @@ fn pull_from_peer(peer_ip: &str, db_path: &Path) -> io::Result<Arc<Snapshot>> {
             }
             file_writer.write_all(&buf[..n])?;
             total_bytes += n as u64;
+            let wire_bytes = decoder.get_ref().get_ref().count;
             // \r keeps this to one animated line rather than flooding
             // scrollback; logging goes to stderr (see main.rs's
             // `StderrLogger`) so this stdout line never interleaves with it.
             // Explicit flush because stdout is line-buffered and this line
             // never ends in '\n'.
-            print!("\r[mesh_sync] Pulling from {peer_ip}: {:.1} MB", total_bytes as f64 / 1_000_000.0);
+            print!(
+                "\r[mesh_sync] Pulling from {peer_ip}: {:.1} MB received (compressed) -> {:.1} MB written (decompressed)",
+                wire_bytes as f64 / 1_000_000.0,
+                total_bytes as f64 / 1_000_000.0,
+            );
             let _ = stdout.flush();
         }
         println!();
