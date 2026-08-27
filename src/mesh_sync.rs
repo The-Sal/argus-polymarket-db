@@ -22,6 +22,10 @@ const PULL_TIMEOUT_SECS: u64 = 120;
 /// `pull_from_peer` — also the granularity of the `\r`-animated progress
 /// counter, matching `TRANSFER_CHUNK_BYTES` on the sending side.
 const PULL_PROGRESS_CHUNK_BYTES: usize = 256 * 1024;
+/// Minimum wire-byte delta between progress line updates in
+/// `pull_from_peer`, so the `\r` line refreshes a handful of times per
+/// transfer instead of once per `PULL_PROGRESS_CHUNK_BYTES` chunk.
+const PULL_PROGRESS_REPORT_BYTES: u64 = 10 * 1_000_000;
 
 /// Thin `Read` wrapper that tallies bytes as they come off the wire,
 /// installed *underneath* `GzDecoder` so the count reflects actual
@@ -199,6 +203,7 @@ fn pull_from_peer(peer_ip: &str, db_path: &Path) -> io::Result<Arc<Snapshot>> {
         let mut buf = vec![0u8; PULL_PROGRESS_CHUNK_BYTES];
         let mut total_bytes: u64 = 0;
         let mut stdout = io::stdout();
+        let mut last_reported_wire_bytes: u64 = 0;
         loop {
             let n = decoder.read(&mut buf)?;
             if n == 0 {
@@ -210,15 +215,27 @@ fn pull_from_peer(peer_ip: &str, db_path: &Path) -> io::Result<Arc<Snapshot>> {
             // \r keeps this to one animated line rather than flooding
             // scrollback; logging goes to stderr (see main.rs's
             // `StderrLogger`) so this stdout line never interleaves with it.
-            // Explicit flush because stdout is line-buffered and this line
-            // never ends in '\n'.
-            print!(
-                "\r[mesh_sync] Pulling from {peer_ip}: {:.1} MB received (compressed) -> {:.1} MB written (decompressed)",
-                wire_bytes as f64 / 1_000_000.0,
-                total_bytes as f64 / 1_000_000.0,
-            );
-            let _ = stdout.flush();
+            // Throttled to once per PULL_PROGRESS_REPORT_BYTES of wire data
+            // (rather than every PULL_PROGRESS_CHUNK_BYTES chunk) since a
+            // non-TTY consumer of stdout (e.g. output redirected to a log
+            // file) turns every `\r` into its own line instead of overwriting.
+            if wire_bytes - last_reported_wire_bytes >= PULL_PROGRESS_REPORT_BYTES {
+                last_reported_wire_bytes = wire_bytes;
+                // Explicit flush because stdout is line-buffered and this
+                // line never ends in '\n'.
+                print!(
+                    "\r[mesh_sync] Pulling from {peer_ip}: {:.1} MB received (compressed) -> {:.1} MB written (decompressed)",
+                    wire_bytes as f64 / 1_000_000.0,
+                    total_bytes as f64 / 1_000_000.0,
+                );
+                let _ = stdout.flush();
+            }
         }
+        print!(
+            "\r[mesh_sync] Pulling from {peer_ip}: {:.1} MB received (compressed) -> {:.1} MB written (decompressed)",
+            decoder.get_ref().get_ref().count as f64 / 1_000_000.0,
+            total_bytes as f64 / 1_000_000.0,
+        );
         println!();
         file_writer.flush()?;
         file_writer.get_ref().sync_all()?;
