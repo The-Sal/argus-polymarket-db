@@ -209,17 +209,29 @@ fn handle_list_tickers(db: &Database, id: Value, data: Value) -> Value {
 /// JSON-encoded array (not a native array) — Argus's own `Market.from_dict`
 /// parses it the same way. Handled defensively for a native array too, in
 /// case that ever changes upstream.
+fn parse_id_list(v: Option<&Value>) -> Vec<String> {
+    match v {
+        Some(Value::String(s)) => serde_json::from_str::<Vec<String>>(s).unwrap_or_default(),
+        Some(Value::Array(a)) => a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
+        _ => Vec::new(),
+    }
+}
+
+/// Falls back to `positionIds` (native array, Protocol V2) when
+/// `clobTokenIds` is missing or unparseable. Never merges the two, so
+/// markets where they are equal yield no duplicates.
 fn extract_asset_ids(markets: &Value) -> Vec<(usize, String)> {
     let mut out = Vec::new();
     let Some(arr) = markets.as_array() else {
         return out;
     };
     for (market_index, market) in arr.iter().enumerate() {
-        let ids: Vec<String> = match market.get("clobTokenIds") {
-            Some(Value::String(s)) => serde_json::from_str::<Vec<String>>(s).unwrap_or_default(),
-            Some(Value::Array(a)) => a.iter().filter_map(|v| v.as_str().map(str::to_string)).collect(),
-            _ => Vec::new(),
-        };
+        let mut ids = parse_id_list(market.get("clobTokenIds"));
+        if ids.is_empty() {
+            // Protocol V2 markets: `positionIds` is a native JSON array
+            // (and equals clobTokenIds when both are present).
+            ids = parse_id_list(market.get("positionIds"));
+        }
         for asset_id in ids {
             out.push((market_index, asset_id));
         }
@@ -315,6 +327,24 @@ fn handle_db_info(db: &Database, id: Value) -> Value {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn asset_ids_v2_position_ids_only() {
+        let m = serde_json::json!([{"positionIds": ["a", "b"]}, {"clobTokenIds": "not json", "positionIds": ["c"]}]);
+        assert_eq!(
+            super::extract_asset_ids(&m),
+            vec![(0, "a".to_string()), (0, "b".to_string()), (1, "c".to_string())]
+        );
+    }
+
+    #[test]
+    fn asset_ids_clob_equals_position_ids_no_dupes() {
+        let m = serde_json::json!([{"clobTokenIds": "[\"x\",\"y\"]", "positionIds": ["x", "y"]}]);
+        assert_eq!(
+            super::extract_asset_ids(&m),
+            vec![(0, "x".to_string()), (0, "y".to_string())]
+        );
+    }
+
     use super::*;
     use crate::database::Snapshot;
     use std::fs::File;

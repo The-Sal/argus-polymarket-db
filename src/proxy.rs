@@ -6,18 +6,23 @@ use ureq::{Agent, Proxy};
 static AGENT: OnceLock<Agent> = OnceLock::new();
 
 fn is_null_disabled() -> bool{
-    let null_disabled = std::env::var("NULL_DISABLED").unwrap_or_else(|_| "false".to_string());
-    null_disabled.parse::<bool>().unwrap()
+    std::env::var("NULL_DISABLED")
+        .map(|v| matches!(v.trim().to_ascii_lowercase().as_str(), "true" | "1" | "yes" | "on"))
+        .unwrap_or(false)
 }
 
 fn proxy_addrs()  -> Vec<String>{
     _ = dotenvy::from_filename(".env");
     let socks5_addrs = std::env::var("SOCKS5_ADDRS").unwrap_or_else(|_| "".to_string());
-    let mut addrs = socks5_addrs.split(',').map(|s| s.to_string()).collect::<Vec<String>>();
-    addrs.push("null".to_string());
-    addrs.insert(0, "null".to_string());
-    if is_null_disabled(){
-        addrs.remove(0);
+    let mut addrs = socks5_addrs
+        .split(',')
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .collect::<Vec<String>>();
+    if !is_null_disabled(){
+        // direct ("null") candidate first and last, only when direct is allowed
+        addrs.push("null".to_string());
+        addrs.insert(0, "null".to_string());
     }
 
     addrs
@@ -56,6 +61,10 @@ fn find_proxy_addr(proxy_addrs: Vec<String>) -> String{
     let addr = rx.recv_timeout(Duration::from_secs(5));
     if addr.is_err(){
         println!("No proxy address found");
+        if is_null_disabled(){
+            // never fall back to a direct connection
+            panic!("NULL_DISABLED=true and no SOCKS5 proxy in SOCKS5_ADDRS is reachable");
+        }
         "null".to_string()
     }else{
         let unwrapped_addr = addr.unwrap();

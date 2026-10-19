@@ -42,6 +42,9 @@ pub struct FetchEventsParams<'a> {
     pub ascending: bool,
     pub closed: bool,
     pub end_date_min: Option<&'a str>,
+    /// Gamma API version selector (e.g. `"v2"` for Polymarket Protocol V2
+    /// markets). `None` sends no `version` param (legacy behaviour).
+    pub version: Option<&'a str>,
 }
 
 impl Default for FetchEventsParams<'_> {
@@ -53,6 +56,7 @@ impl Default for FetchEventsParams<'_> {
             ascending: false,
             closed: false,
             end_date_min: None,
+            version: None,
         }
     }
 }
@@ -82,6 +86,10 @@ pub fn fetch_events(
 
     if let Some(end_date_min) = params.end_date_min {
         request = request.query("end_date_min", end_date_min);
+    }
+
+    if let Some(version) = params.version {
+        request = request.query("version", version);
     }
 
     let mut response = request
@@ -159,6 +167,7 @@ pub struct OpenEventsIter {
     offset: u32,
     pass_count: u32,
     finished: bool,
+    version: Option<String>,
 }
 
 impl OpenEventsIter {
@@ -171,7 +180,14 @@ impl OpenEventsIter {
             offset: 0,
             pass_count: 0,
             finished: false,
+            version: None,
         }
+    }
+
+    /// Crawl with Gamma's `version` param set (e.g. `"v2"`).
+    pub fn with_version(mut self, version: &str) -> Self {
+        self.version = Some(version.to_string());
+        self
     }
 }
 
@@ -207,6 +223,7 @@ impl Iterator for OpenEventsIter {
             ascending: true,
             closed: false,
             end_date_min: self.boundary.as_deref(),
+            version: self.version.as_deref(),
             ..Default::default()
         };
 
@@ -305,5 +322,28 @@ mod tests {
                 break;
             }
         }
+    }
+
+    /// Live: crawl the v2 pass through the proxy and check paging past page 0.
+    /// Run with: SOCKS5_ADDRS=... NULL_DISABLED=true cargo test live_v2 -- --ignored --nocapture
+    #[test]
+    #[ignore]
+    fn live_v2_pagination() {
+        let mut total = 0usize;
+        let mut tickers = std::collections::HashSet::new();
+        let mut pages = 0;
+        // Small page size: the open v2 set is only ~81 events, so a 100-event
+        // page would never exercise paging past page 0.
+        for page in OpenEventsIter::new(20, 2000, 50).with_version("v2") {
+            let page = page.expect("page ok");
+            pages += 1;
+            total += page.len();
+            for e in &page {
+                tickers.insert(e.ticker.clone());
+            }
+            println!("page {pages}: {} events (total {total}, unique {})", page.len(), tickers.len());
+        }
+        assert!(pages >= 2, "pagination past page 0 failed");
+        assert!(tickers.len() > 20); // ties on endDate can repeat/skip rows across pages; dedupe is by ticker
     }
 }
