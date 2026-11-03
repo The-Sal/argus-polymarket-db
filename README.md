@@ -65,8 +65,9 @@ Read from the real environment or a `.env` file in the working directory (via `d
 | `APDB_DB_PATH`                                     | `~/.argus/polymarket_events.db`   | Path to the on-disk NDJSON event log.                                                    |
 | `APDB_BIND_ADDRESS`                                | `/tmp/argus_polymarket_db.sock`   | Unix domain socket path the server listens on.                                           |
 | `POLYMARKET_FULL_MARKET_CACHE_REFRESH_INTERVAL`    | `300`                             | Seconds between background refresh cycles.                                               |
+| `APDB_CRAWL_V2`                                    | `true`                            | Also crawl `version=v2` (Protocol V2) events each cycle; `false`/`0`/`no`/`off` disables.  |
 | `SOCKS5_ADDRS`                                     | *(empty)*                         | Comma-separated `socks5://host:port` proxy pool for outbound Polymarket requests.        |
-| `NULL_DISABLED`                                    | `false`                           | When truthy, disables the direct (no-proxy) path from the proxy race.                    |
+| `NULL_DISABLED`                                    | `false`                           | When truthy (`true`/`1`/`yes`/`on`), never connects directly (no `null` candidate, no fallback).                    |
 
 > **Quirk:** `.env` is resolved relative to the process's **current working
 > directory at launch**, not to the binary's location or to `APDB_DB_PATH`'s

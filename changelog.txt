@@ -182,3 +182,19 @@ Changes:
     * pull_from_peer (function)
 
 ====================================================================================================
+
+====================================================================================================
+Version 2.2.0
+Added:
+    + crawl_v2_enabled (function)
+    + OpenEventsIter::with_version (method)
+    + parse_id_list (function)
+Changes:
+    * FetchEventsParams (struct)  - optional `version` query param
+    * fetch_events (function)
+    * OpenEventsIter (struct)
+    * full_crawl_and_compact (function)  - chained v1 + v2 (Protocol V2) crawl, APDB_CRAWL_V2 toggle
+    * extract_asset_ids (function)  - positionIds fallback
+    * is_null_disabled (function)  - tolerant parse
+    * proxy_addrs (function)  - NULL_DISABLED never includes direct
+    * find_proxy_addr (function)  - no direct fallback when NULL_DISABLED

@@ -41,8 +41,9 @@ real environment):
 | `APDB_DB_PATH`                | `polymarket_events.db`            | Path to the on-disk NDJSON event log backing the database. |
 | `APDB_BIND_ADDRESS`           | `/tmp/argus_polymarket_db.sock`   | Unix domain socket path the server listens on.             |
 | `POLYMARKET_FULL_MARKET_CACHE_REFRESH_INTERVAL` | `300`             | Both the background refresh cadence *and* a TTL on the on-disk snapshot's `built_at_unix` at boot: a snapshot older than this is refreshed synchronously before the server starts serving, instead of being served stale. See `docs/db_specs/v1.md`. Named to stay in sync with the core [Argus](https://github.com/the-sal/argus) project. |
+| `APDB_CRAWL_V2`               | `true`                            | Also crawl Gamma with `version=v2` (Polymarket Protocol V2 markets, which the default query never returns) after the v1 pass each refresh cycle. Set `false`/`0`/`no`/`off` to disable. |
 | `SOCKS5_ADDRS`                | *(empty)*                         | Comma-separated `socks5://host:port` proxy pool used for outbound Polymarket requests. |
-| `NULL_DISABLED`               | `false`                           | When truthy, disables routing through the null/no-op proxy path. |
+| `NULL_DISABLED`               | `false`                           | When truthy (`true`/`1`/`yes`/`on`), never connects directly: only `SOCKS5_ADDRS` candidates are used, and startup fails rather than falling back to direct. |
 
 `--version` as a CLI flag prints `Argus Polymarket Database v<major.minor.patch>` and exits 0 before anything else runs.
 
@@ -123,6 +124,14 @@ Look up a single event by exact ticker.
 → {"op":"get_event","ticker":"btc-updown-1"}
 ← {"id":null,"op":"get_event","ok":true,"db_version":"1.3.0","result":{"event":{"ticker":"btc-updown-1","markets":[...]}}}
 ```
+
+### Event records: Protocol V2 fields
+
+Events are stored as returned by Gamma (opaque pass-through). Events from the
+`version=v2` crawl may include `"version": "v2"`, a per-market `positionIds`
+(native JSON array) and `resolutionStatus`. On v2 markets `clobTokenIds` equals
+`positionIds`. `list_asset_ids` reads `clobTokenIds` and falls back to
+`positionIds` when it is missing or unparseable (never both, so no duplicates).
 
 ### `list_events`
 

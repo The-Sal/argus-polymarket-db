@@ -37,6 +37,15 @@ fn parse_rfc3339_unix(date_str: &str) -> Option<i64> {
 /// Shared with `mesh_sync.rs` so a network-pulled database and a locally
 /// crawled one land in the same `.tmp` staging location before either is
 /// renamed into place.
+/// `APDB_CRAWL_V2` (default true): also crawl `version=v2` events.
+/// Accepts false/0/no/off (case-insensitive) to disable.
+pub(crate) fn crawl_v2_enabled() -> bool {
+    match std::env::var("APDB_CRAWL_V2") {
+        Ok(v) => !matches!(v.trim().to_ascii_lowercase().as_str(), "false" | "0" | "no" | "off"),
+        Err(_) => true,
+    }
+}
+
 pub(crate) fn tmp_path_for(path: &Path) -> PathBuf {
     let mut s = path.as_os_str().to_owned();
     s.push(".tmp");
@@ -84,39 +93,66 @@ pub(crate) fn full_crawl_and_compact(path: &Path, old: Option<Arc<Snapshot>>) ->
     // time — the whole point of driving the iterator directly.
     let mut pages = 0u32;
     let mut last_progress = Instant::now();
-    for page in OpenEventsIter::default() {
-        let events = page.map_err(io::Error::other)?;
-        pages += 1;
-        for event in events {
-            let ticker = event.ticker.trim().to_string();
-            if ticker.is_empty() {
-                log::warn!("[refresh] Skipping crawled record with empty ticker");
-                continue;
+    // Pass 1 is the legacy (no `version` param) crawl; pass 2 asks Gamma for
+    // Protocol V2 markets (`version=v2`), which v1 never returns. Overlap is
+    // resolved by `dedupe_keep_last` below.
+    let crawl_v2 = crawl_v2_enabled();
+    let mut passes: Vec<(&str, OpenEventsIter)> = vec![("v1", OpenEventsIter::default())];
+    if crawl_v2 {
+        passes.push(("v2", OpenEventsIter::default().with_version("v2")));
+    }
+    let mut pass_counts: Vec<(&str, usize)> = Vec::new();
+    for (pass_name, iter) in passes {
+        let mut pass_events = 0usize;
+        for page in iter {
+            let events = match page {
+                Ok(events) => events,
+                // A v2 failure must not discard a good v1 crawl; the
+                // carry-forward merge keeps previously known v2 tickers.
+                Err(e) if pass_name == "v2" => {
+                    log::warn!("[refresh] {mode}: v2 pass failed, continuing with v1 results: {e}");
+                    break;
+                }
+                Err(e) => return Err(io::Error::other(e)),
+            };
+            pages += 1;
+            for event in events {
+                let ticker = event.ticker.trim().to_string();
+                if ticker.is_empty() {
+                    log::warn!("[refresh] Skipping crawled record with empty ticker");
+                    continue;
+                }
+                let json = serde_json::to_string(&event)?;
+                writer.write_all(json.as_bytes())?;
+                writer.write_all(b"\n")?;
+                entries.push(IndexEntry {
+                    ticker,
+                    offset,
+                    len: json.len() as u32,
+                });
+                offset += json.len() as u64 + 1;
+                pass_events += 1;
             }
-            let json = serde_json::to_string(&event)?;
-            writer.write_all(json.as_bytes())?;
-            writer.write_all(b"\n")?;
-            entries.push(IndexEntry {
-                ticker,
-                offset,
-                len: json.len() as u32,
-            });
-            offset += json.len() as u64 + 1;
+            if last_progress.elapsed() >= CRAWL_PROGRESS_INTERVAL {
+                log::info!(
+                    "[refresh] {mode}: still crawling ({pass_name}) — {pages} pages, {} events fetched so far ({:.0}s elapsed)",
+                    entries.len(),
+                    start.elapsed().as_secs_f64()
+                );
+                last_progress = Instant::now();
+            }
         }
-        if last_progress.elapsed() >= CRAWL_PROGRESS_INTERVAL {
-            log::info!(
-                "[refresh] {mode}: still crawling — {pages} pages, {} events fetched so far ({:.0}s elapsed)",
-                entries.len(),
-                start.elapsed().as_secs_f64()
-            );
-            last_progress = Instant::now();
-        }
+        pass_counts.push((pass_name, pass_events));
     }
 
+    let count_of = |n: &str| pass_counts.iter().find(|(p, _)| *p == n).map(|(_, c)| *c);
     log::info!(
-        "[refresh] {mode}: crawl fetched {} events across {pages} pages in {:.1}s; compacting...",
+        "[refresh] {mode}: crawl fetched {} events across {pages} pages in {:.1}s (v1={}, v2={}); compacting...",
         entries.len(),
-        start.elapsed().as_secs_f64()
+        start.elapsed().as_secs_f64(),
+        count_of("v1").unwrap_or(0),
+        count_of("v2").map(|c| c.to_string()).unwrap_or_else(|| "disabled".to_string()),
+        
     );
 
     entries.sort_by(|a, b| a.ticker.cmp(&b.ticker));
